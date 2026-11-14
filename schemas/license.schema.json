@@ -1,0 +1,78 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "title",
+    "author",
+    "source_url",
+    "source_version",
+    "license",
+    "evidence",
+    "rights"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_url": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "rights": {
+      "type": "object",
+      "required": [
+        "commercial_use",
+        "modification",
+        "runtime_distribution",
+        "source_distribution",
+        "third_party_upload"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "commercial_use": {
+          "type": "boolean"
+        },
+        "modification": {
+          "type": "boolean"
+        },
+        "runtime_distribution": {
+          "type": "boolean"
+        },
+        "source_distribution": {
+          "type": "boolean"
+        },
+        "third_party_upload": {
+          "type": "boolean"
+        }
+      }
+    },
+    "expected_source_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

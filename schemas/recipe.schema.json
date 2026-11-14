@@ -1,0 +1,74 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "build_plugin"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "build_plugin": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "build_plugin": {
+            "const": "blender-static"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "build_plugin",
+          "blender_version",
+          "objects",
+          "height_m",
+          "subdivision_level"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "build_plugin": {
+            "const": "blender-static"
+          },
+          "blender_version": {
+            "type": "string",
+            "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$"
+          },
+          "objects": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "height_m": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000
+          },
+          "subdivision_level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "rotation_z_degrees": {
+            "type": "number",
+            "minimum": -360,
+            "maximum": 360
+          }
+        }
+      }
+    }
+  ]
+}

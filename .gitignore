@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.blend1
+*.blend2
+.godot/
+factory.local.json
+assets/.locks/
+artifacts/skills_backup/

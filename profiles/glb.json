@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "id": "glb",
+  "plugin": "glb",
+  "kind": "runtime",
+  "format": "GLB 2.0",
+  "requires_validation": "glb-static",
+  "requires_rights": ["runtime_distribution"],
+  "includes_source": false,
+  "visual_review_requirement": "pending_human is retained; export is a technical artifact, not visual approval"
+}

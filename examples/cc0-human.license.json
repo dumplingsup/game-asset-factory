@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "title": "Human Base Meshes 1.4.1 — GEO-body_male_realistic",
+  "author": "Blender Studio and community contributors",
+  "source_url": "https://www.blender.org/download/demo-files/",
+  "source_version": "1.4.1",
+  "license": "CC0-1.0",
+  "evidence": [
+    "BUNDLE_README.txt",
+    "original-source-record.json"
+  ],
+  "expected_source_sha256": "27260f90b329b16eade31367245278bac0dda73a5cbb05a94a27537588742039",
+  "rights": {
+    "commercial_use": true,
+    "modification": true,
+    "runtime_distribution": true,
+    "source_distribution": true,
+    "third_party_upload": false
+  },
+  "conditions": "No claim of endorsement; CC0 does not grant trademark or patent rights. Retain source record voluntarily.",
+  "attribution_required": false,
+  "notes": "Existing selected CC0 mesh only; no Rain rig. Upload remains disabled by local policy even though CC0 permits reuse."
+}

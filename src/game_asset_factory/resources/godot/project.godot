@@ -1,0 +1,16 @@
+config_version=5
+
+[application]
+config/name="Game Asset Factory | Generic Preview"
+
+[display]
+window/size/viewport_width=960
+window/size/viewport_height=720
+window/size/window_width_override=960
+window/size/window_height_override=720
+
+[rendering]
+renderer/rendering_method="forward_plus"
+rendering_device/driver.windows="vulkan"
+anti_aliasing/quality/msaa_3d=1
+environment/defaults/default_clear_color=Color(0.08, 0.1, 0.12, 1)
