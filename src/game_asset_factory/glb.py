@@ -6,7 +6,9 @@ from pathlib import Path
 import struct
 
 
-def validate_glb(path, *, allow_character=False):
+def validate_glb(path, *, allow_character=False, allow_morph=False):
+    if allow_morph and not allow_character:
+        raise ValueError('Morph preservation requires the character profile')
     raw = Path(path).read_bytes()
     if len(raw) < 28:
         raise ValueError('Truncated GLB')
@@ -45,19 +47,52 @@ def validate_glb(path, *, allow_character=False):
     accessors = data.get('accessors', [])
     values = []
     for a in accessors:
-        if 'sparse' in a or a.get('componentType') not in types or a.get('type') not in widths:
-            raise ValueError('Unsupported accessor type/sparse data')
+        if a.get('componentType') not in types or a.get('type') not in widths:
+            raise ValueError('Unsupported accessor type')
         view_id = a.get('bufferView', -1)
-        if not 0 <= view_id < len(views) or not isinstance(a.get('count'), int) or a['count'] <= 0:
+        if not isinstance(a.get('count'), int) or a['count'] <= 0:
             raise ValueError('Invalid accessor reference/count')
-        v = views[view_id]
         code, component_size = types[a['componentType']]
         size = component_size * widths[a['type']]
-        stride = v.get('byteStride', size)
         start = a.get('byteOffset', 0)
-        if start < 0 or stride < size or stride % component_size or start % component_size or start + stride * (a['count'] - 1) + size > v['byteLength']:
-            raise ValueError('Accessor range/stride invalid')
-        rows = [struct.unpack_from('<' + code * widths[a['type']], binary, v.get('byteOffset', 0) + start + i * stride) for i in range(a['count'])]
+        if view_id == -1 and 'sparse' in a:
+            if start != 0:
+                raise ValueError('Sparse accessor without base view has a byte offset')
+            rows = [tuple(0 for _ in range(widths[a['type']])) for _ in range(a['count'])]
+        else:
+            if not 0 <= view_id < len(views):
+                raise ValueError('Invalid accessor reference/count')
+            v = views[view_id]
+            stride = v.get('byteStride', size)
+            if start < 0 or stride < size or stride % component_size or start % component_size or start + stride * (a['count'] - 1) + size > v['byteLength']:
+                raise ValueError('Accessor range/stride invalid')
+            rows = [struct.unpack_from('<' + code * widths[a['type']], binary, v.get('byteOffset', 0) + start + i * stride) for i in range(a['count'])]
+        if 'sparse' in a:
+            if not allow_morph:
+                raise ValueError('Sparse accessors require the morph-enabled character profile')
+            sparse = a['sparse']
+            count = sparse.get('count', 0)
+            if not isinstance(count, int) or not 0 < count <= a['count']:
+                raise ValueError('Invalid sparse accessor count')
+            index = sparse.get('indices', {})
+            index_type = index.get('componentType')
+            if index_type not in (5121, 5123, 5125):
+                raise ValueError('Invalid sparse index type')
+            def sparse_rows(record, element_code, element_size, width):
+                view = record.get('bufferView', -1)
+                offset = record.get('byteOffset', 0)
+                if not 0 <= view < len(views) or offset < 0 or offset % element_size:
+                    raise ValueError('Invalid sparse view/offset')
+                view = views[view]
+                if 'byteStride' in view or offset + count * width * element_size > view['byteLength']:
+                    raise ValueError('Sparse accessor range invalid')
+                return [struct.unpack_from('<' + element_code * width, binary, view.get('byteOffset', 0) + offset + i * width * element_size) for i in range(count)]
+            indices = [r[0] for r in sparse_rows(index, *types[index_type], 1)]
+            if any(i >= a['count'] for i in indices) or any(b <= a for a, b in zip(indices, indices[1:])):
+                raise ValueError('Sparse indices are not increasing/in range')
+            replacement = sparse_rows(sparse.get('values', {}), code, component_size, widths[a['type']])
+            for i, row in zip(indices, replacement, strict=True):
+                rows[i] = row
         if code == 'f' and any(not math.isfinite(x) for row in rows for x in row):
             raise ValueError('Non-finite vertex data')
         values.append(rows)
@@ -68,10 +103,19 @@ def validate_glb(path, *, allow_character=False):
         raise ValueError('No meshes')
     primitive_count = 0
     geometry = hashlib.sha256()
+    morph_records = []
     for mesh in meshes:
+        target_count = len(mesh.get('primitives', [{}])[0].get('targets', []))
+        target_names = mesh.get('extras', {}).get('targetNames', [f'target_{i}' for i in range(target_count)])
+        if len(target_names) != target_count or len(set(target_names)) != target_count:
+            raise ValueError('Invalid morph target names/count')
+        weights = mesh.get('weights', [0] * target_count)
+        if len(weights) != target_count or any(not isinstance(x, (int, float)) or not math.isfinite(x) for x in weights):
+            raise ValueError('Invalid mesh morph weights')
+        target_records = [[] for _ in range(target_count)]
         for p in mesh.get('primitives', []):
             primitive_count += 1
-            if p.get('mode', 4) != 4 or p.get('targets') or p.get('extensions'):
+            if p.get('mode', 4) != 4 or (p.get('targets') and not allow_morph) or p.get('extensions'):
                 raise ValueError('Static profile requires uncompressed triangles without morph targets')
             attrs = p.get('attributes', {})
             position_id = attrs.get('POSITION', -1)
@@ -81,6 +125,20 @@ def validate_glb(path, *, allow_character=False):
             if position['type'] != 'VEC3' or position['componentType'] != 5126:
                 raise ValueError('POSITION must be VEC3 float')
             count = position['count']
+            if len(p.get('targets', [])) != target_count:
+                raise ValueError('Morph target count differs across mesh primitives')
+            for target_index, target in enumerate(p.get('targets', [])):
+                if not target or any(key not in ('POSITION', 'NORMAL', 'TANGENT') for key in target):
+                    raise ValueError('Invalid morph attributes')
+                for key, index in target.items():
+                    if not 0 <= index < len(accessors) or accessors[index]['type'] != 'VEC3' or accessors[index]['componentType'] != 5126 or accessors[index]['count'] != count:
+                        raise ValueError('Morph accessor reference/type/count mismatch')
+                positions = values[target['POSITION']] if 'POSITION' in target else [(0, 0, 0)] * count
+                target_records[target_index].append({'vertices': count,
+                    'nonzero_position_vertices': sum(any(abs(x) > 1e-6 for x in row) for row in positions),
+                    'max_position_delta': max(math.sqrt(sum(x*x for x in row)) for row in positions),
+                    # Sparse implicit zero and dense +/-0.0 are numerically equal.
+                    'position_delta_sha256': hashlib.sha256(json.dumps([[0.0 if x==0 else x for x in row] for row in positions], separators=(',', ':')).encode()).hexdigest()})
             for attribute_id in attrs.values():
                 if not 0 <= attribute_id < len(accessors) or accessors[attribute_id]['count'] != count:
                     raise ValueError('Attribute count/reference mismatch')
@@ -103,6 +161,8 @@ def validate_glb(path, *, allow_character=False):
             degenerate_indices += sum(len(set(indices[i:i + 3])) != 3 for i in range(0, len(indices), 3))
             vertices += count
             triangles += len(indices) // 3
+        if target_count:
+            morph_records.append({'mesh': mesh.get('name', ''), 'names': target_names, 'weights': weights, 'targets': target_records})
     if triangles < 1:
         raise ValueError('No triangles')
     for image in data.get('images', []):
@@ -124,6 +184,9 @@ def validate_glb(path, *, allow_character=False):
     for node in data.get('nodes', []):
         if 'mesh' in node and not 0 <= node['mesh'] < len(meshes):
             raise ValueError('Invalid node mesh reference')
+        if 'weights' in node:
+            if 'mesh' not in node or len(node['weights']) != len(meshes[node['mesh']]['primitives'][0].get('targets', [])) or any(not isinstance(x, (int, float)) or not math.isfinite(x) for x in node['weights']):
+                raise ValueError('Invalid node morph weights')
     semantic = {k: data.get(k) for k in ('meshes', 'nodes', 'materials', 'textures', 'images', 'samplers', 'accessors', 'bufferViews')}
     if allow_character:
         semantic.update(skins=data.get('skins'), animations=data.get('animations'))
@@ -136,11 +199,13 @@ def validate_glb(path, *, allow_character=False):
             'semantic_sha256': digest, 'geometry_sha256_at_1e_5': geometry.hexdigest(), 'visual_review': 'pending_human',
             'coverage': 'Structural/buffer/accessor/finite/index checks plus Blender reimport; not Khronos certification or visual acceptance'}
     if allow_character:
-        result.update(character_metrics(data, accessors, values))
+        result.update(character_metrics(data, accessors, values, allow_morph=allow_morph))
+    if allow_morph:
+        result.update(morph_meshes=morph_records, morph_target_count=sum(len(m['names']) for m in morph_records))
     return result
 
 
-def character_metrics(data, accessors, values):
+def character_metrics(data, accessors, values, *, allow_morph=False):
     nodes, skins = data.get('nodes', []), data.get('skins', [])
     parents = {}
     for index, node in enumerate(nodes):
@@ -191,14 +256,24 @@ def character_metrics(data, accessors, values):
                 if any(joint >= joint_count for joint, weight in zip(joints, weights) if weight > 0):
                     raise ValueError('Skin joint index out of range')
                 weighted_vertices += 1
+    skeleton_records = []
+    for skin in skins:
+        inverse = values[skin['inverseBindMatrices']] if 'inverseBindMatrices' in skin else [tuple(float(i % 5 == 0) for i in range(16))] * len(skin['joints'])
+        for joint, matrix in zip(skin['joints'], inverse, strict=True):
+            node = nodes[joint]
+            transform = {key: node[key] for key in ('matrix', 'translation', 'rotation', 'scale') if key in node}
+            skeleton_records.append([node.get('name', str(joint)), nodes[parents[joint]].get('name', str(parents[joint])) if joint in parents else None,
+                                     transform, [round(x, 5) for x in matrix]])
+    skeleton_digest = hashlib.sha256(json.dumps(sorted(skeleton_records, key=lambda r:r[0]), sort_keys=True, separators=(',', ':')).encode()).hexdigest()
     animations = []
     for animation in data.get('animations', []):
-        samplers, dynamic = animation.get('samplers', []), 0
+        samplers, dynamic, morph_dynamic = animation.get('samplers', []), 0, 0
         duration = 0.0
         for channel in animation.get('channels', []):
             target = channel.get('target', {})
             sampler_id = channel.get('sampler', -1)
-            if not 0 <= sampler_id < len(samplers) or not 0 <= target.get('node', -1) < len(nodes) or target.get('path') not in ('translation', 'rotation', 'scale'):
+            supported_paths = ('translation', 'rotation', 'scale', 'weights') if allow_morph else ('translation', 'rotation', 'scale')
+            if not 0 <= sampler_id < len(samplers) or not 0 <= target.get('node', -1) < len(nodes) or target.get('path') not in supported_paths:
                 raise ValueError('Unsupported/invalid animation channel')
             sampler = samplers[sampler_id]
             i, o = sampler.get('input', -1), sampler.get('output', -1)
@@ -212,10 +287,24 @@ def character_metrics(data, accessors, values):
             interpolation = sampler.get('interpolation', 'LINEAR')
             factor = 3 if interpolation == 'CUBICSPLINE' else 1
             expected_type = 'VEC4' if target['path'] == 'rotation' else 'VEC3'
-            if interpolation not in ('LINEAR', 'STEP', 'CUBICSPLINE') or accessors[o]['count'] != len(times) * factor or accessors[o]['type'] != expected_type:
+            components = 1
+            if target['path'] == 'weights':
+                mesh = nodes[target['node']].get('mesh', -1)
+                if not 0 <= mesh < len(data['meshes']):
+                    raise ValueError('Morph animation node has no mesh')
+                components = len(data['meshes'][mesh]['primitives'][0].get('targets', []))
+                if components < 1:
+                    raise ValueError('Morph animation has no targets')
+                expected_type = 'SCALAR'
+            if interpolation not in ('LINEAR', 'STEP', 'CUBICSPLINE') or accessors[o]['count'] != len(times) * factor * components or accessors[o]['type'] != expected_type or accessors[o]['componentType'] != 5126:
                 raise ValueError('Invalid animation interpolation/output')
             duration = max(duration, times[-1])
-            if target['node'] in joint_nodes and any(max(row) != min(row) for row in zip(*values[o])):
+            if target['path'] == 'weights':
+                weights = [row[0] for row in values[o]]
+                keys = [weights[(k * factor + (1 if factor == 3 else 0)) * components:(k * factor + (1 if factor == 3 else 0) + 1) * components] for k in range(len(times))]
+                if any(max(row) != min(row) for row in zip(*keys)):
+                    morph_dynamic += 1
+            elif target['node'] in joint_nodes and any(max(row) != min(row) for row in zip(*values[o])):
                 dynamic += 1
-        animations.append({'name': animation.get('name', ''), 'duration': duration, 'channels': len(animation.get('channels', [])), 'dynamic_joint_channels': dynamic})
-    return {'skins': skin_records, 'weighted_vertices': weighted_vertices, 'animations': animations}
+        animations.append({'name': animation.get('name', ''), 'duration': duration, 'channels': len(animation.get('channels', [])), 'dynamic_joint_channels': dynamic, 'dynamic_morph_channels': morph_dynamic})
+    return {'skins': skin_records, 'weighted_vertices': weighted_vertices, 'animations': animations, 'skeleton_signature_sha256': skeleton_digest}

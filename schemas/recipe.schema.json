@@ -116,6 +116,20 @@
             "type": "integer",
             "minimum": 24,
             "maximum": 120
+          },
+          "static_pose_actions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "morph_targets": {
+            "enum": [
+              "reject",
+              "preserve"
+            ]
           }
         }
       }

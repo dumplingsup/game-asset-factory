@@ -16,3 +16,5 @@ vendor/**/*.blend
 dist/
 build/
 *.egg-info/
+vendor/kai/
+vendor/wolfman/

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "mode": "inspection",
+  "idle_clip": "Idle",
+  "walk_clip": "Walk",
+  "attack_clip": "Punch",
+  "capture_views": true,
+  "capture_morphs": true,
+  "face_center_offset": [0, 0.28, -0.15],
+  "face_size_m": 0.95,
+  "walk_speed_mps": 1.0,
+  "equipment_sets": [
+    {"name": "sword_shield", "active": ["Sword", "Shield"]},
+    {"name": "spear_shield", "active": ["Spear", "Shield"]}
+  ]
+}

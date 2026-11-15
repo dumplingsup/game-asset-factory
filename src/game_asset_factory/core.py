@@ -313,7 +313,7 @@ class Factory:
         assert_inventory(directory, data['outputs'])
         return directory, data
 
-    def execute(self, action, asset_id, plugin, *, revision=None, build_id=None, movie=False, material_mode='clay', usage='commercial', operation=None, animation_source_build=None, profile=None):
+    def execute(self, action, asset_id, plugin, *, revision=None, build_id=None, movie=False, material_mode='clay', usage='commercial', operation=None, animation_source_build=None, profile=None, preview_config=None):
         from .plugins import Context, require_local
         require_local(plugin)
         base, asset, rev_dir, rev = self.revision(asset_id, revision)
@@ -332,7 +332,9 @@ class Factory:
         with self.run(base, action, plugin=plugin.name, inputs=inputs) as (run_dir, record):
             if operation is not None:
                 record['inputs']['operation'] = operation
-            context = Context(self, base, rev_dir, rev, run_dir, record, build_dir, build, movie, material_mode, usage, operation, animation_source_build, profile)
+            if preview_config is not None:
+                record['inputs']['preview_config'] = preview_config
+            context = Context(self, base, rev_dir, rev, run_dir, record, build_dir, build, movie, material_mode, usage, operation, animation_source_build, profile, preview_config)
             result = plugin.run(context)
             record['outputs'] = result
         return result

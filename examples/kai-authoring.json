@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "description": "Authored derivative: orient KAI, add licensed Kenney equipment and new facial morphs. These features are not in the original KAI download.",
+  "orientation_z_degrees": 90,
+  "head_group": "mixamorig:Head",
+  "face_shapes": [
+    {"name": "Face_BrowRaise", "centers": [[-0.19, 0.40, 1.39], [0.19, 0.40, 1.39]], "sigma": [0.13, 0.17, 0.075], "delta_m": [0, 0, 0.04], "bounds": {"y": [0.20, 0.70], "z": [1.23, 1.50]}},
+    {"name": "Face_MuzzleSmile", "centers": [[-0.12, 0.55, 1.13], [0.12, 0.55, 1.13]], "sigma": [0.12, 0.15, 0.065], "delta_m": [0, 0.012, 0.035], "bounds": {"y": [0.27, 0.80], "z": [1.01, 1.25]}}
+  ],
+  "animate_expressions": true,
+  "equipment": [
+    {"variant": "Sword", "node": "Equipment_Sword", "slot": "right_hand", "file": "weapon-sword.glb", "bone": "mixamorig:RightHand", "height_m": 0.50, "grip_height_fraction": 0.18, "offset_m": [0.015, 0.04, 0], "rotation_z_degrees": 0, "default_active": true},
+    {"variant": "Spear", "node": "Equipment_Spear", "slot": "right_hand", "file": "weapon-spear.glb", "bone": "mixamorig:RightHand", "height_m": 1.10, "grip_height_fraction": 0.50, "offset_m": [0.015, 0.04, 0], "rotation_z_degrees": 0, "default_active": false},
+    {"variant": "Shield", "node": "Equipment_Shield", "slot": "left_hand", "file": "shield-round.glb", "bone": "mixamorig:LeftHand", "height_m": 0.42, "grip_height_fraction": 0.50, "offset_m": [0, 0.07, 0], "rotation_z_degrees": 180, "default_active": true}
+  ]
+}

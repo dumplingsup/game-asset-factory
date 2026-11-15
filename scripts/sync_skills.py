@@ -27,7 +27,7 @@ def routed(payload):
 
 先读取同级 `game-asset-factory/SKILL.md`。仓库位于 `{{FACTORY_ROOT}}`；从任何目录调用均显式指定 `uv --project` 和 `gaf --root`，避免写入游戏项目。静态 3D 的 ingest → build → validate → preview → export 优先走该 CLI，保留许可证、源修订、真实工具日志和导出版本。技术通过不能替代人工视觉评审。
 
-工厂 0.2 支持既有骨架／蒙皮／材质／动画保留、局部网格修改，以及在兼容 rig 上复用原动作；角色必须使用角色插件，不能交给静态插件丢弃骨骼。当前不支持自动绑定、任意骨架 retarget、morph、2D 生产、付费生成服务或具体游戏的 Mod 导出；按实际能力转交专用工具。禁止把权利未核验的素材上传生成服务。直接 Blender 脚本可作为专用加工补充，成熟后通过插件接入工厂。
+工厂 0.3 支持既有骨架／蒙皮／材质／动画保留、显式 Morph 保留、同步目标的局部修改、兼容 rig 动作复用、装备组件与第三人称检视；角色必须使用角色插件。预览配置与真实 KAI 派生样本见工厂 docs/v03/WORKFLOW.md；原 KAI 与新制面部／装备内容分别溯源。当前不支持自动绑定、任意骨架 retarget、2D 生产、付费生成服务或具体游戏的 Mod 导出；按实际能力转交专用工具。禁止把权利未核验的素材上传生成服务。直接 Blender 脚本可作为专用加工补充，成熟后通过插件接入工厂。
 <!-- game-asset-factory-routing:end -->'''
     text = re.sub(r'<!-- game-asset-factory-routing:start -->.*?<!-- game-asset-factory-routing:end -->\s*', '', text, flags=re.S)
     text = text.replace('- 角色、道具、地块和逐帧动画用 pixel-art-studio。', '- 2D 角色、道具、地块和逐帧动画用 pixel-art-studio。')

@@ -1,6 +1,6 @@
 # Existing architecture
 
-0.2 extends the original factory; it does not replace its architecture.
+0.3 extends the original factory and 0.2 character plugins; it does not replace their architecture.
 
 | Component | Responsibility |
 |---|---|
@@ -10,7 +10,8 @@
 | `glb.py` | Structure/geometry/material checks; skin and animation validation |
 | `resources/blender_worker.py` | Static import, editable source, export and reimport |
 | `resources/character_worker.py` | Existing rig/skin/actions preservation, bounded local edit, export/reimport |
-| `resources/godot/` | Generic static preview and fixed-camera real skeletal animation preview |
+| `resources/godot/` | Existing static/character Harness: inspection, third-person input and independent performance modes |
+| `resources/character_integrity.py` | Bidirectional world-space Morph geometry correspondence across actual Blender reimports |
 | `profiles/` | Engine-independent export contracts |
 | `skills/` | Explicitly installable Codex/Claude routing templates |
 
@@ -38,4 +39,6 @@ The core does not depend on Godot. Blender builds and GLB exports work without i
 
 Licenses independently record commercial use, modification, runtime distribution, source distribution and third-party upload. Export requires validated unchanged output plus sufficient rights for the selected usage. No upload/paid-generation backend is implemented. Plugin metadata is not an OS security sandbox.
 
-Static import rejects skin/animation instead of stripping it. The verified character profile supports up to four influences per vertex, existing compatible rigs and existing actions. Morph targets and unsupported influence counts fail explicitly. Technical verification never grants visual approval.
+Static import rejects skin/animation instead of stripping it. The verified character profile supports up to four influences per vertex, compatible rigs and existing actions. Morphs require `morph_targets=preserve`; sparse accessors, weight animation, real reimported deltas and Godot deformation are checked. Unsupported influence counts fail explicitly. Technical verification never grants visual approval.
+
+Equipment uses a generic `components.json` beside the GLB, not game rules in registration. Source transforms stay invertible; visibility selects slots after animation evaluation. A consumer of the bare GLB must apply the component manifest (otherwise all equipment meshes are present together). Blender authoring can remain a dedicated recorded script, while builds/revisions/previews continue through the existing plugins. See [v0.3 workflow](v03/WORKFLOW.md).

@@ -38,9 +38,29 @@ CHARACTER_RECIPE = {
                    "blender_version": {"type": "string", "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$"},
                    "height_m": {"type": ["number", "null"], "exclusiveMinimum": 0},
                    "rotation_z_degrees": {"type": "number", "minimum": -360, "maximum": 360},
-                   "animation_fps": {"type": "integer", "minimum": 24, "maximum": 120}},
+                   "animation_fps": {"type": "integer", "minimum": 24, "maximum": 120},
+                   "static_pose_actions": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": True},
+                   "morph_targets": {"enum": ["reject", "preserve"]}},
 }
 RECIPE['allOf'].append({"if": {"properties": {"build_plugin": {"const": "blender-character"}}}, "then": CHARACTER_RECIPE})
+
+CHARACTER_PREVIEW = {
+    "type":"object", "required":["schema_version"], "additionalProperties":False,
+    "properties": {
+        "schema_version":{"const":1},
+        "mode":{"enum":["inspection","third_person","performance","interactive"]},
+        **{k:{"type":"string","minLength":1} for k in ("idle_clip","walk_clip","attack_clip")},
+        "capture_views":{"type":"boolean"}, "capture_morphs":{"type":"boolean"},
+        "face_center_offset":{"type":"array","minItems":3,"maxItems":3,"items":{"type":"number"}},
+        "face_size_m":{"type":"number","minimum":0.1,"maximum":5},
+        "walk_speed_mps":{"type":"number","minimum":0.1,"maximum":10},
+        "equipment_sets":{"type":"array","items":{"type":"object","required":["name","active"],"additionalProperties":False,
+            "properties":{"name":{"type":"string","minLength":1},"active":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":True}}}},
+        "warmup_frames":{"type":"integer","minimum":30,"maximum":1000},
+        "sample_frames":{"type":"integer","minimum":60,"maximum":5000},
+        "p95_frame_budget_ms":{"type":"number","exclusiveMinimum":0,"maximum":1000}
+    }
+}
 
 
 def check(data, schema):

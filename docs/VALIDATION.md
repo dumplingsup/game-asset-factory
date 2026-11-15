@@ -1,5 +1,7 @@
 # Public-source validation, 0.2
 
+This is the retained historical 0.2 record. Current 0.3 results, regression reruns, real biped/Morph/equipment evidence and limits are recorded in [v03/VALIDATION.md](v03/VALIDATION.md).
+
 The public checkout was tested again on 2026-11-15 using actual pinned Fox/Lantern files, Blender 5.2.3, Godot 4.7.2 and FFmpeg. Core production modules are unchanged from the local 0.2 implementation. Publishing adds portable setup/documentation, explicit license/recipe arguments to the old static E2E, a pinned default sample download and a portable skill installer.
 
 | Check | Actual result |

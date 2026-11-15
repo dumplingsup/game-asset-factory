@@ -24,4 +24,6 @@ jobs:
       - run: uv sync --locked
       - name: Acquire the pinned licensed real samples
         run: uv run --locked python scripts/acquire_v02_samples.py
+      - name: Acquire the pinned CC0 Morph format sample
+        run: uv run --locked python scripts/acquire_v03_samples.py
       - run: uv run --locked pytest -q

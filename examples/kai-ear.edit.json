@@ -1,0 +1,13 @@
+{
+  "kind": "vertex_offset",
+  "object": "geometry_0",
+  "where": {
+    "vertex_group": "mixamorig:Head",
+    "min_weight": 0.8,
+    "bounds": {"y": [300, 340], "z": [20, 90]}
+  },
+  "delta": [0, 8, 0],
+  "falloff": {"axis": "y", "range": [300, 334]},
+  "max_fraction": 0.1,
+  "description": "Smoothly raise the right ear tip. Apply the same change to Basis and every morph so facial deltas are preserved."
+}

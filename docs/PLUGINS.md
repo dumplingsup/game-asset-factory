@@ -24,3 +24,7 @@ run 收到已校验的资产路径、源修订、不可覆盖运行目录、可�
 ## 0.2 增量
 
 新增 blender-character、glb-character、godot-character，以及 action=edit 的 blender-character-edit。仍使用原 Context／运行记录／源修订，不新增 Agent 框架。GLB exporter 根据 character build 自动选择 glb-character profile，并继续独立检查 commercial/noncommercial 与 runtime_distribution；profile 不能绕过商业用途检查。完整操作见 [CHARACTER_WORKFLOW.md](CHARACTER_WORKFLOW.md)。
+
+## 0.3 增量
+
+同一角色插件增加显式 Morph 保留与重导入差分验证、包含真实附件节点的 components.json，以及 `preview --config`。Context 的可选 preview_config 随现有执行记录保存；schema 在 schemas/character-preview.schema.json。inspection 保留原检视模式，third_person 使用脚本输入检视行走／攻击／换装，interactive 接受真实键鼠，performance 禁止 movie/fixed-fps，并记录独立帧时。兼容复用额外核对骨架父子、静止 TRS 和逆绑定签名；不提供跨骨架重定向。源加工范例 scripts/prepare_kai_sample.py 是显式、本地、可重跑的 Blender 步骤，不注册空生成器。见 [工作流与边界](v03/WORKFLOW.md)。

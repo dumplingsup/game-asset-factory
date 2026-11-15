@@ -7,5 +7,5 @@
 - Technical checks do not approve visual quality. Keep `visual_review=pending_human`; agents cannot grant art approval.
 - Verify commercial use, modification, runtime distribution, source distribution and third-party upload independently. MIT covers factory code, not third-party assets.
 - No automatic uploads, paid API calls or purchases. External plugins are trusted local code, not an OS sandbox.
-- 0.2 supports existing rigs/skin/materials/actions, bounded mesh edits and compatible-rig motion reuse. Do not claim automatic rigging, arbitrary retargeting, morph support, 2D production or Mod adapters.
+- 0.3 extends the same character plugins with explicit Morph preservation, equipment components, third-person preview and independent performance sampling. See docs/v03/WORKFLOW.md. KAI originally has one mesh/material and no Morphs or separate equipment; retain the distinction between original content, licensed Kenney parts and newly authored facial keys/action. Do not claim automatic rigging, arbitrary retargeting, 2D production or Mod adapters.
 - Keep local asset databases, runs, credentials, caches and machine configuration out of public history. Use Git LFS for deliberately published binary assets after checking their licenses and metadata.

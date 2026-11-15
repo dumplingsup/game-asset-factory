@@ -6,6 +6,7 @@ import shutil
 
 from .core import assert_inventory, inventory, process, read, safe_id, sha, tool, write
 from .glb import validate_glb
+from .schemas import check, CHARACTER_PREVIEW
 
 RESOURCES = Path(__file__).parent / 'resources'
 
@@ -26,6 +27,7 @@ class Context:
     operation: dict | None = None
     animation_source_build: str | None = None
     profile: str | None = None
+    preview_config: dict | None = None
 
     def output(self, kind):
         directory = self.asset / kind / self.run_dir.name
@@ -156,7 +158,22 @@ class GlbExport(LocalPlugin):
         check_export_rights(license_data['rights'], ctx.usage, profile['requires_rights'])
         output = ctx.output('exports')
         shutil.copyfile(ctx.build_dir / 'model.glb', output / 'model.glb')
+        if (ctx.build_dir / 'components.json').is_file():
+            shutil.copyfile(ctx.build_dir / 'components.json', output / 'components.json')
         shutil.copytree(ctx.asset / 'licenses', output / 'notices')
+        changes = []
+        revision_id = ctx.build['revision']
+        seen = set()
+        while revision_id:
+            if revision_id in seen:
+                raise ValueError('Cyclic source revision chain')
+            seen.add(revision_id)
+            revision = read(ctx.asset / 'source' / safe_id(revision_id) / 'revision.json')
+            changes.append({'revision': revision_id, 'note': revision['note'], 'created_at': revision['created_at'],
+                            'source_sha256': revision['files'][revision['source']]})
+            revision_id = revision.get('parent')
+        write(output / 'notices' / 'modifications.json', {'schema_version': 1, 'changes': list(reversed(changes)),
+              'purpose': 'Source revision modification notices; original third-party terms remain in license.json'})
         write(output / 'export.json', {'schema_version': 1, 'id': ctx.run_dir.name, 'profile': profile_id, 'asset': ctx.asset.name,
               'source_revision': ctx.build['revision'], 'source_revision_sha256': ctx.build['revision_sha256'], 'build_id': ctx.build['id'],
               'build_manifest_sha256': sha(ctx.build_dir / 'build.json'), 'model_sha256': sha(output / 'model.glb'),
@@ -173,6 +190,8 @@ def character_blender(ctx, action, output):
         model = ctx.build_dir / ('editable.blend' if action == 'edit' else 'model.glb')
     request = {'action': action, 'output': str(output), 'source': str(ctx.revision_dir / ctx.revision['source']),
                'model': str(model) if model else None, 'recipe': read(ctx.revision_dir / 'recipe.json'), 'operation': ctx.operation}
+    if action == 'inspect' and (ctx.build_dir / 'morph_reference.json').is_file():
+        request['morph_reference'] = str(ctx.build_dir / 'morph_reference.json')
     path = ctx.run_dir / 'character_request.json'
     write(path, request)
     process([tool('blender'), '--background', '--factory-startup', '--disable-autoexec', '--python-exit-code', '23', '--python', str(RESOURCES / 'character_worker.py'), '--', str(path)], ctx.run_dir, 'blender-character-' + action, timeout=600)
@@ -186,23 +205,28 @@ class BlenderCharacter(LocalPlugin):
         output = ctx.output('builds')
         report = character_blender(ctx, 'build', output)
         source = read(output / 'input_snapshot.json')
-        metrics = validate_glb(output / 'model.glb', allow_character=True)
+        morph_mode = read(ctx.revision_dir / 'recipe.json').get('morph_targets','reject')
+        metrics = validate_glb(output / 'model.glb', allow_character=True,allow_morph=morph_mode=='preserve')
         names = {clip['name'] for clip in metrics['animations']}
         if not metrics['skins'] or not metrics['weighted_vertices'] or names != {clip['name'] for clip in source['actions']}:
             raise ValueError('Export lost skin or animation clips')
         for clip in metrics['animations']:
             action = next(a for a in source['actions'] if a['name'] == clip['name'])
             fps = read(ctx.revision_dir / 'recipe.json')['animation_fps']
-            expected = (action['frame_range'][1] - action['frame_range'][0]) / fps
-            if clip['dynamic_joint_channels'] < 1 or abs(clip['duration'] - expected) > 1 / fps + 0.001:
-                raise ValueError('Exported clip lost bone motion or timing')
+            export_range = action.get('export_frame_range', action['frame_range'])
+            expected = (export_range[1] - export_range[0]) / fps
+            static_poses = read(ctx.revision_dir / 'recipe.json').get('static_pose_actions', [])
+            if (clip['dynamic_joint_channels'] < 1 and clip.get('dynamic_morph_channels',0)<1 and clip['name'] not in static_poses) or abs(clip['duration'] - expected) > 1 / fps + 0.001:
+                raise ValueError(f"Exported clip lost bone motion or timing: {clip['name']}, expected {expected}, got {clip['duration']}")
         if {name for skin in metrics['skins'] for name in skin['joint_names']} != set(source['bone_names']):
             raise ValueError('Export changed joint names')
-        for key in ('bones_sha256', 'weights_sha256', 'uv_sha256', 'actions_sha256', 'materials_sha256', 'images_sha256'):
+        if morph_mode == 'preserve' and metrics.get('morph_target_count',0) != sum(len(v) for v in source['morph_targets'].values()):
+            raise ValueError('Export lost morph targets')
+        for key in ('bones_sha256', 'weights_sha256', 'uv_sha256', 'actions_sha256', 'materials_sha256', 'images_sha256','morphs_sha256'):
             if report[key] != source[key]:
                 raise ValueError('Build changed protected character data: ' + key)
         write(output / 'format_metrics.json', metrics)
-        data = {'schema_version': 1, 'id': ctx.run_dir.name, 'kind': 'character', 'status': 'succeeded', 'revision': ctx.revision['id'],
+        data = {'schema_version': 1, 'id': ctx.run_dir.name, 'kind': 'character', 'morph_mode':morph_mode,'status': 'succeeded', 'revision': ctx.revision['id'],
                 'revision_sha256': sha(ctx.revision_dir / 'revision.json'), 'recipe_sha256': sha(ctx.revision_dir / 'recipe.json'),
                 'tool_version': report['version'], 'outputs': inventory(output), 'visual_review': 'pending_human'}
         write(output / 'build.json', data)
@@ -216,12 +240,14 @@ class GlbCharacterValidate(LocalPlugin):
     def run(self, ctx):
         if ctx.build.get('kind') != 'character':
             raise ValueError('Character validator requires character build')
-        metrics = validate_glb(ctx.build_dir / 'model.glb', allow_character=True)
+        metrics = validate_glb(ctx.build_dir / 'model.glb', allow_character=True,allow_morph=ctx.build.get('morph_mode')=='preserve')
         imported = character_blender(ctx, 'inspect', ctx.run_dir)
         if imported['skinned_meshes'] < 1 or imported['bones'] != sum(s['joints'] for s in metrics['skins']) or imported['triangles_evaluated'] != metrics['triangles_mesh_definitions']:
             raise ValueError('Reimport lost geometry/skin/bones')
         if {a['name'] for a in imported['actions']} != {a['name'] for a in metrics['animations']}:
             raise ValueError('Reimport lost animation actions')
+        if sum(len(v) for v in imported.get('morph_targets',{}).values()) != metrics.get('morph_target_count',0):
+            raise ValueError('Reimport lost morph targets')
         write(ctx.run_dir / 'validation.json', {'technical_status': 'passed', 'build_id': ctx.build['id'], 'model_sha256': sha(ctx.build_dir / 'model.glb'),
               'format': metrics, 'blender_reimport': imported, 'visual_review': 'pending_human'})
         return {'validation_id': ctx.run_dir.name, 'report_sha256': sha(ctx.run_dir / 'validation.json'), 'technical_status': 'passed'}
@@ -250,6 +276,26 @@ class GodotCharacterPreview(LocalPlugin):
         if ctx.animation_source_build:
             donor_dir, donor_build = ctx.factory.build_record(ctx.asset, ctx.animation_source_build)
             receipt(replace(ctx, build_dir=donor_dir, build=donor_build), 'glb-character')
+        actor_metrics = read(ctx.build_dir / 'format_metrics.json')
+        donor_metrics = read(donor_dir / 'format_metrics.json')
+        if not actor_metrics.get('skeleton_signature_sha256'):
+            actor_metrics = validate_glb(ctx.build_dir/'model.glb', allow_character=True, allow_morph=ctx.build.get('morph_mode')=='preserve')
+        if not donor_metrics.get('skeleton_signature_sha256'):
+            donor_metrics = validate_glb(donor_dir/'model.glb', allow_character=True, allow_morph=donor_build.get('morph_mode')=='preserve')
+        if actor_metrics.get('skeleton_signature_sha256') != donor_metrics.get('skeleton_signature_sha256'):
+            raise ValueError('Incompatible skeleton rest/bind signature; reuse is not cross-rig retargeting')
+        config = ctx.preview_config or {'schema_version':1}
+        check(config,CHARACTER_PREVIEW)
+        if ctx.movie and config.get('mode')=='performance':
+            raise ValueError('Performance must run without movie/fixed-FPS capture')
+        component_data = read(ctx.build_dir/'components.json') if (ctx.build_dir/'components.json').is_file() else {'equipment':[]}
+        variants = {c['variant']:c for c in component_data['equipment']}
+        for outfit in config.get('equipment_sets',[]):
+            slots = set()
+            for variant in outfit['active']:
+                if variant not in variants or variants[variant]['slot'] in slots:
+                    raise ValueError('Unknown equipment variant or multiple pieces assigned to one slot')
+                slots.add(variants[variant]['slot'])
         ctx.run_record['inputs']['animation_donor'] = {'build_id': donor_build['id'], 'model_sha256': sha(donor_dir / 'model.glb')}
         output = ctx.output('previews')
         viewer = output / 'viewer'
@@ -261,13 +307,26 @@ class GodotCharacterPreview(LocalPlugin):
         if ctx.movie:
             command += ['--write-movie', str(output / 'animation.avi'), '--fixed-fps', '30']
         command += ['--', '--model=' + str(ctx.build_dir / 'model.glb'), '--donor=' + str(donor_dir / 'model.glb'), '--output=' + str(output), '--material-mode=' + ctx.material_mode]
-        process(command, ctx.run_dir, 'godot-character-preview', timeout=240)
+        recipe = read(ctx.asset / 'source' / ctx.build['revision'] / 'recipe.json')
+        write(output / 'preview_input.json', {**config,'static_pose_actions': recipe.get('static_pose_actions', []),
+            'morph_only_actions':[a['name'] for a in actor_metrics['animations'] if a['dynamic_joint_channels']==0 and a.get('dynamic_morph_channels',0)>0],
+            'components':component_data['equipment']})
+        command += ['--preview-config=' + str(output / 'preview_input.json')]
+        process(command, ctx.run_dir, 'godot-character-preview', timeout=3600 if config.get('mode')=='interactive' else 240)
         report = read(output / 'preview.json')
         if not report['animation_library_reused'] or not report['animation_library_reloaded_from_disk'] or report['bones'] < 1 or report['skinned_meshes'] < 1 or not report['clips']:
             raise ValueError('Missing actual character animation proof')
         expected_clips = {a['name'] for a in read(ctx.build_dir / 'format_metrics.json')['animations']}
-        if {c['clip'] for c in report['clips']} != expected_clips:
+        if config.get('mode','inspection')=='inspection' and {c['clip'] for c in report['clips']} != expected_clips:
             raise ValueError('Godot did not preview every exported clip')
+        if config.get('capture_morphs') and len(report.get('morph_checks',[])) != actor_metrics.get('morph_target_count',0):
+            raise ValueError('Godot did not demonstrate every actual morph target')
+        if config.get('mode')=='third_person':
+            movement = report.get('movement',{})
+            if movement.get('distance_m',0)<1 or movement.get('attacks',0)<2 or not movement.get('body_and_skeleton_instance_ids_unchanged'):
+                raise ValueError('Missing actual third-person movement/attack/equipment proof')
+        if config.get('mode')=='performance' and (not report.get('performance',{}).get('budget_passed') or report['performance']['fixed_fps']):
+            raise ValueError('Missing independent performance measurements or configured budget failed')
         for shot in report['captures']:
             if (output / shot['file']).stat().st_size < 1024:
                 raise ValueError('Empty animation capture')

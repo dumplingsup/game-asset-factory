@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "mode": "performance",
+  "walk_clip": "Walk",
+  "warmup_frames": 120,
+  "sample_frames": 600,
+  "p95_frame_budget_ms": 16.667,
+  "equipment_sets": [{"name": "sword_shield", "active": ["Sword", "Shield"]}]
+}

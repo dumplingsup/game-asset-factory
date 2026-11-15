@@ -1,0 +1,96 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "mode": {
+      "enum": [
+        "inspection",
+        "third_person",
+        "performance",
+        "interactive"
+      ]
+    },
+    "idle_clip": {
+      "type": "string",
+      "minLength": 1
+    },
+    "walk_clip": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attack_clip": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capture_views": {
+      "type": "boolean"
+    },
+    "capture_morphs": {
+      "type": "boolean"
+    },
+    "face_center_offset": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "number"
+      }
+    },
+    "face_size_m": {
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 5
+    },
+    "walk_speed_mps": {
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 10
+    },
+    "equipment_sets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "active"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "active": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "warmup_frames": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 1000
+    },
+    "sample_frames": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 5000
+    },
+    "p95_frame_budget_ms": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1000
+    }
+  }
+}

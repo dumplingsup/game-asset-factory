@@ -42,6 +42,7 @@ def main():
             command.add_argument('--movie', action='store_true')
             command.add_argument('--material-mode', choices=['clay', 'source'], default='clay')
             command.add_argument('--animation-source-build', help='Reuse animation library from another validated build of this asset')
+            command.add_argument('--config', type=Path, help='Character inspection/third-person/performance configuration')
         if action == 'export':
             command.add_argument('--usage', choices=['commercial', 'noncommercial'], default='commercial')
             command.add_argument('--profile', help='Export profile; automatically selected for character builds')
@@ -73,7 +74,7 @@ def main():
                     plugin = plugins.get(args.plugin)
                     if plugin is None or plugin.action != args.command:
                         raise ValueError('No implemented plugin for this command: ' + args.plugin)
-                    result = factory.execute(args.command, args.asset, plugin, revision=args.revision, build_id=getattr(args, 'build', None), movie=getattr(args, 'movie', False), material_mode=getattr(args, 'material_mode', 'clay'), usage=getattr(args, 'usage', 'commercial'), operation=read(args.operation) if getattr(args, 'operation', None) else None, animation_source_build=getattr(args, 'animation_source_build', None), profile=getattr(args, 'profile', None))
+                    result = factory.execute(args.command, args.asset, plugin, revision=args.revision, build_id=getattr(args, 'build', None), movie=getattr(args, 'movie', False), material_mode=getattr(args, 'material_mode', 'clay'), usage=getattr(args, 'usage', 'commercial'), operation=read(args.operation) if getattr(args, 'operation', None) else None, animation_source_build=getattr(args, 'animation_source_build', None), profile=getattr(args, 'profile', None), preview_config=read(args.config) if getattr(args,'config',None) else None)
         print(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False))
         return 0
     except (OSError, ValueError, RuntimeError, KeyError) as exc:

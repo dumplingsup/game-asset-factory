@@ -1,0 +1,303 @@
+{
+  "schema_version": 1,
+  "purpose": "Public sanitized summary, not an integrity receipt",
+  "version": "0.3.0",
+  "status": "technical_checks_passed",
+  "visual_review": "pending_human",
+  "kai_e2e": {
+    "report": "artifacts/kai_e2e/20261115t112014/e2e.json",
+    "report_sha256": "21c2b3f9b48b163fb2c9d75a11429a6da72fe0cf48c89614a823308b077832c2",
+    "steps": 25,
+    "started_at": "2026-11-15T11:20:14.220029+00:00",
+    "elapsed_seconds": 209.195,
+    "cli_subprocess_seconds": 196.758,
+    "authoring_subprocess_seconds": 11.4732,
+    "baseline_build": "20261115t112048-build-bf8a656d",
+    "variant_build": "20261115t112201-build-8ebe09c7",
+    "baseline_glb_sha256": "aa1233684b920f80ec2cde533c8b7a4f81ffd1bdca7cc590c0c1ce8e246a0f65",
+    "variant_glb_sha256": "b9acaa74de6288ade1ee49e7e9c98fb61fcd09efc425857654215904af5dbe20",
+    "edited_source_rebuild_byte_equal": true,
+    "rollback_source_rebuild_byte_equal": true,
+    "fresh_raw_pipeline_repeated_same_glb": true,
+    "comparison_cameras_identical": true,
+    "real_slot_conflict_rejected": true,
+    "movie_performance_rejected": true
+  },
+  "asset": {
+    "meshes": 4,
+    "materials": 2,
+    "embedded_images": 2,
+    "vertices_exported": 35275,
+    "triangles_mesh_definitions": 50170,
+    "morph_target_count": 2
+  },
+  "bones": 41,
+  "animations": [
+    {
+      "name": "Hello",
+      "duration": 0.5666666626930237,
+      "channels": 123,
+      "dynamic_joint_channels": 121,
+      "dynamic_morph_channels": 0
+    },
+    {
+      "name": "Idle",
+      "duration": 1.2666666507720947,
+      "channels": 123,
+      "dynamic_joint_channels": 122,
+      "dynamic_morph_channels": 0
+    },
+    {
+      "name": "Kick",
+      "duration": 2.700000047683716,
+      "channels": 123,
+      "dynamic_joint_channels": 122,
+      "dynamic_morph_channels": 0
+    },
+    {
+      "name": "Pray",
+      "duration": 4.300000190734863,
+      "channels": 123,
+      "dynamic_joint_channels": 123,
+      "dynamic_morph_channels": 0
+    },
+    {
+      "name": "Punch",
+      "duration": 1.4333332777023315,
+      "channels": 123,
+      "dynamic_joint_channels": 122,
+      "dynamic_morph_channels": 0
+    },
+    {
+      "name": "Run",
+      "duration": 0.7333333492279053,
+      "channels": 123,
+      "dynamic_joint_channels": 84,
+      "dynamic_morph_channels": 0
+    },
+    {
+      "name": "T-Pose",
+      "duration": 0.06666667014360428,
+      "channels": 123,
+      "dynamic_joint_channels": 0,
+      "dynamic_morph_channels": 0
+    },
+    {
+      "name": "Walk",
+      "duration": 0.8999999761581421,
+      "channels": 123,
+      "dynamic_joint_channels": 118,
+      "dynamic_morph_channels": 0
+    },
+    {
+      "name": "Face_Expressions",
+      "duration": 1.0,
+      "channels": 1,
+      "dynamic_joint_channels": 0,
+      "dynamic_morph_channels": 1
+    }
+  ],
+  "authoring": {
+    "preserved": {
+      "original_base_vertices": true,
+      "original_skin_weights": true,
+      "original_uv": true,
+      "original_rest_rig": true,
+      "all_original_action_curves": true
+    },
+    "added_clips": [
+      "Face_Expressions"
+    ],
+    "face_shapes": [
+      {
+        "name": "Face_BrowRaise",
+        "changed_vertices": 2306,
+        "max_world_delta_m": 0.039696809430568594,
+        "smooth_bounds_taper": true,
+        "coincident_vertex_displacements_shared": true
+      },
+      {
+        "name": "Face_MuzzleSmile",
+        "changed_vertices": 2303,
+        "max_world_delta_m": 0.03677032186268516,
+        "smooth_bounds_taper": true,
+        "coincident_vertex_displacements_shared": true
+      }
+    ],
+    "equipment": [
+      {
+        "variant": "Sword",
+        "source_name": "weapon-sword.glb",
+        "source_sha256": "8e69eb27977f8c84a9b7cd423cd5830eddcf0d07ac1d7fed1969931387015b28",
+        "bone": "mixamorig:RightHand",
+        "slot": "right_hand"
+      },
+      {
+        "variant": "Spear",
+        "source_name": "weapon-spear.glb",
+        "source_sha256": "991fbb818c13226981d8c53b2a709c98bcc594b6cb895eea06478f3630814574",
+        "bone": "mixamorig:RightHand",
+        "slot": "right_hand"
+      },
+      {
+        "variant": "Shield",
+        "source_name": "shield-round.glb",
+        "source_sha256": "1527cc9a27891efe1019e22cf68d99c98f6fce9a45b3d6e1e4cf034956e08e54",
+        "bone": "mixamorig:LeftHand",
+        "slot": "left_hand"
+      }
+    ]
+  },
+  "ear_edit": {
+    "vertices_modified": 980,
+    "total_vertices": 34747,
+    "world_delta_m_maximum": [
+      1.2387939563041073e-08,
+      -2.412020973238476e-15,
+      0.040891535580158234
+    ],
+    "preserved": {
+      "bones_sha256": true,
+      "weights_sha256": true,
+      "uv_sha256": true,
+      "actions_sha256": true,
+      "materials_sha256": true,
+      "images_sha256": true,
+      "morphs_sha256": true
+    },
+    "unselected_positions_unchanged": true
+  },
+  "godot_morph_checks": [
+    {
+      "max_world_delta_m": 0.0396969467401505,
+      "mesh": "geometry_0",
+      "morph": "Face_BrowRaise",
+      "value": 1.0
+    },
+    {
+      "max_world_delta_m": 0.0367703177034855,
+      "mesh": "geometry_0",
+      "morph": "Face_MuzzleSmile",
+      "value": 1.0
+    }
+  ],
+  "performance": {
+    "performance": {
+      "budget_passed": true,
+      "cpu": "11th Gen Intel(R) Core(TM) i5-11400H @ 2.70GHz",
+      "fixed_fps": false,
+      "frame_wall_ms_max": 2.08,
+      "frame_wall_ms_p50": 0.678,
+      "frame_wall_ms_p95": 1.15,
+      "godot": "4.7.2-stable (official)",
+      "godot_process_ms_p95": 35.336,
+      "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU",
+      "gpu_readback_during_measurement": false,
+      "max_draw_calls": 25,
+      "max_godot_static_memory_bytes": 57585493,
+      "max_primitives": 300686,
+      "max_video_memory_bytes": 124675936,
+      "movie_capture": false,
+      "p95_frame_budget_ms": 16.667,
+      "reference_actor_removed": true,
+      "rendered_frames_during_sampling": 3912,
+      "renderer": "forward_plus",
+      "sample_frames": 3913,
+      "sample_frames_requested": 600,
+      "sample_seconds": 3.000473,
+      "viewport": [
+        960,
+        720
+      ],
+      "visible_actors": 1,
+      "warmup_frames_minimum": 120
+    },
+    "variant_performance": {
+      "budget_passed": true,
+      "cpu": "11th Gen Intel(R) Core(TM) i5-11400H @ 2.70GHz",
+      "fixed_fps": false,
+      "frame_wall_ms_max": 1.902,
+      "frame_wall_ms_p50": 0.687,
+      "frame_wall_ms_p95": 1.176,
+      "godot": "4.7.2-stable (official)",
+      "godot_process_ms_p95": 32.94,
+      "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU",
+      "gpu_readback_during_measurement": false,
+      "max_draw_calls": 25,
+      "max_godot_static_memory_bytes": 57585493,
+      "max_primitives": 300686,
+      "max_video_memory_bytes": 124676544,
+      "movie_capture": false,
+      "p95_frame_budget_ms": 16.667,
+      "reference_actor_removed": true,
+      "rendered_frames_during_sampling": 3860,
+      "renderer": "forward_plus",
+      "sample_frames": 3861,
+      "sample_frames_requested": 600,
+      "sample_seconds": 3.000322,
+      "viewport": [
+        960,
+        720
+      ],
+      "visible_actors": 1,
+      "warmup_frames_minimum": 120
+    }
+  },
+  "fees": {
+    "api": 0,
+    "assets": 0
+  },
+  "time_accounting": "Measured E2E wall/subprocess durations only. No continuous development/human timer; no fabricated total person-hours. Authoring and ear edit were scripted local Blender operations.",
+  "limits": [
+    "Original KAI armor remains baked; separate weapons/shield only",
+    "Two authored facial keys, not a full facial rig",
+    "Compatible-rig reuse only; no cross-skeleton retarget",
+    "Preview movement has no collision/hit/damage validation",
+    "Bare GLB requires components.json consumer for equipment activation",
+    "Visual quality and manual interactive acceptance remain pending human"
+  ],
+  "regressions": {
+    "python": {
+      "status": "passed",
+      "tests": 52,
+      "log": "artifacts/v03/release-checks/pytest.stdout.log"
+    },
+    "character": {
+      "report": "artifacts/character_e2e/20261115t112344/e2e.json",
+      "report_sha256": "bc8ca2c6dd20fd931a4375c1ceef9f1afd80d505a477912ff4c684236d7408b1",
+      "steps": 19,
+      "status": "passed"
+    },
+    "pbr": {
+      "report": "artifacts/pbr_e2e/20261115t112425/e2e.json",
+      "report_sha256": "529ca51a5f22cc507f7c62711b6be5965918a151593817a9d784537c8a4c2f3a",
+      "steps": 12,
+      "status": "passed"
+    },
+    "original_01": {
+      "report": "artifacts/e2e/20261115T112443/e2e.json",
+      "report_sha256": "c1af4039f8400cdd547384116de99afa5975e056903e253e3a4f151d6d9661cc",
+      "steps": 18,
+      "status": "passed"
+    }
+  },
+  "skills": {
+    "status": "installed_and_validated",
+    "hosts": [
+      "Codex",
+      "Claude Code"
+    ],
+    "files": 4,
+    "rollback_record_retained_locally": true
+  },
+  "media": {
+    "movies_fully_decoded": 4,
+    "keyframes_opened": true,
+    "human_animation_acceptance": "pending"
+  },
+  "package_build": {
+    "status": "passed",
+    "wheel_contains_character_resources": true,
+    "no_asset_database_or_model_binaries": true
+  }
+}

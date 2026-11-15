@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "investigation_checkpoint_not_0.3_release",
+  "status": "implemented_technical_e2e_passed_human_review_pending",
   "baseline_version": "0.2.0",
   "baseline_checks": {
     "unit_tests": 36,
@@ -116,17 +116,20 @@
     "model_uid": "aa56e447b578470b8d6b1b9587fd29ac",
     "official_license": "CC-BY-4.0",
     "official_animation_count": 8,
-    "source_obtained": false,
+    "source_obtained": true,
     "anonymous_download_http_status": 401,
     "browser_navigation": "timed out, including recovery",
-    "multi_mesh": "unknown",
-    "multi_material": "unknown",
-    "equipment": "unknown",
-    "facial_morphs": "unknown"
+    "multi_mesh": false,
+    "multi_material": false,
+    "equipment": false,
+    "facial_morphs": false,
+    "source_zip_sha256": "fc4d52913e4151fb62622f084ea8093c30c1bf09bdf2d4d0fb69f936cd05dd5d",
+    "source_contents": "1 mesh, 1 material, 41 bones, 8 actions, no Morphs or separate equipment",
+    "derivative": "See validation.json; Kenney equipment and new facial keys/action explicitly authored with user authorization"
   },
-  "production_modules_changed": false,
-  "primary_sample_accepted": false,
-  "v03_end_to_end": "not_started_pending_qualified_sample",
+  "production_modules_changed": true,
+  "primary_sample_accepted": true,
+  "v03_end_to_end": "passed_real_authored_KAI_derivative",
   "visual_review": "pending_human",
   "full_original_files_and_raw_logs": "retained locally in ignored artifacts/v03; public summaries are not integrity receipts",
   "fox_probe_backward_check": {
@@ -141,6 +144,12 @@
     },
     "raw_source_unchanged": true
   },
-  "production_modules_match_local_02_by_sha256": true,
-  "source_probe_code_sha256": "9209b22a8c808c69a90f0a28b55082ee74a3ddad22e24a6c3a521d6a687425b5"
+  "production_modules_match_local_02_by_sha256": false,
+  "source_probe_code_sha256": "9209b22a8c808c69a90f0a28b55082ee74a3ddad22e24a6c3a521d6a687425b5",
+  "prior_checkpoint": {
+    "source_obtained": false,
+    "production_modules_changed": false,
+    "primary_sample_accepted": false,
+    "reason": "Original investigation before user supplied official KAI ZIP and authorized actual equipment/facial authoring"
+  }
 }

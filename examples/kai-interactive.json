@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "mode": "interactive",
+  "idle_clip": "Idle",
+  "walk_clip": "Walk",
+  "attack_clip": "Punch",
+  "walk_speed_mps": 1.0,
+  "equipment_sets": [
+    {"name": "sword_shield", "active": ["Sword", "Shield"]},
+    {"name": "spear_shield", "active": ["Spear", "Shield"]}
+  ]
+}

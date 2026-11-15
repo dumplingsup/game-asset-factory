@@ -2,11 +2,11 @@
 
 A local, engine-independent asset pipeline for indie games and Mods. Python + uv orchestrates reproducible Blender jobs, editable source revisions, licensing, GLB validation and optional Godot previews. No Agent framework, cloud account or paid generation API is required.
 
-本地游戏／Mod 美术资产工厂。**0.2** 支持静态 PBR、多 Mesh，以及保留现有骨骼、蒙皮、材质和动画的角色加工、局部修改与兼容骨架动作复用。资产生产独立于游戏工程；Godot 是通用预览目标。
+本地游戏／Mod 美术资产工厂。**0.3** 在原有静态 PBR、骨架角色加工与兼容动作复用上，增加显式 Morph 保留、装备组件、第三人称检视和独立性能采样。资产生产独立于游戏工程；Godot 是通用预览目标。
 
-v0.3 investigation: [scope, real candidate inspections and acceptance gates](docs/v03/SCOPE.md). The complete biped wolf/fox sample has not yet passed admission; this does not announce Morph/equipment support or a 0.3 release.
+v0.3: [scope and source distinctions](docs/v03/SCOPE.md), [reproduce the real KAI workflow](docs/v03/WORKFLOW.md), [technical results and remaining human review](docs/v03/VALIDATION.md).
 
-**Status:** technical validation only. Every asset remains `visual_review=pending_human`; an Agent cannot approve visual quality. Automatic rigging, arbitrary retargeting, morph targets, 2D production and game-specific Mod adapters are not implemented.
+**Status:** technical validation only. Every asset remains `visual_review=pending_human`; an Agent cannot approve visual quality. Automatic rigging, arbitrary retargeting, 2D production and game-specific Mod adapters are not implemented. KAI originally has no Morphs or separate equipment: this iteration explicitly authors facial keys and fits licensed Kenney equipment, preserving the original rig and eight clips.
 
 ## Requirements
 
@@ -21,12 +21,13 @@ git clone https://github.com/dumplingsup/game-asset-factory.git
 Set-Location game-asset-factory
 uv sync --locked
 uv run --locked python scripts/acquire_v02_samples.py
+uv run --locked python scripts/acquire_v03_samples.py
 uv run --locked pytest -q
 uv run --locked gaf plugins
 uv run --locked gaf doctor
 ```
 
-The explicit acquisition command downloads pinned Khronos Fox/Lantern models and license texts through GET requests. It does not upload local files, read API keys or call a generation service. Downloaded models are ignored by Git; preserved local samples can be used offline.
+The explicit acquisition commands download pinned Khronos Fox/Lantern and CC0 Wolfman Morph-format fixtures with license evidence through GET requests. They do not upload local files, read API keys or call a generation service. Wolfman has no original animation and is only a format regression fixture. KAI E2E requires the actual official ZIPs obtained normally; see the v0.3 workflow. Downloaded models are ignored by Git; preserved samples can be used offline.
 
 ### Real animated character
 
