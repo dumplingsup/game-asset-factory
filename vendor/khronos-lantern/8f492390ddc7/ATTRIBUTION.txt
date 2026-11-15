@@ -1,0 +1,5 @@
+Lantern
+Authors: Microsoft / sbtron; Frank Galligan (compression)
+Source: https://github.com/KhronosGroup/glTF-Sample-Assets/tree/8f492390ddc7a2ae221a1369ef560589cf8c70fb/Models/Lantern
+License: CC0-1.0
+Factory derivatives may normalize transforms, modify a local region, re-export, and reuse the original motions. See the source revision recipe and build reports for exact changes. No endorsement is claimed. Original notices and license text retained.

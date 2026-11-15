@@ -11,6 +11,7 @@ var bounds := AABB()
 var captures: Array[Dictionary] = []
 var mesh_instances := 0
 var triangles := 0
+var material_records: Array[Dictionary] = []
 
 func _initialize() -> void:
 	for argument: String in OS.get_cmdline_user_args():
@@ -88,6 +89,11 @@ func _run() -> void:
 		if material_mode == "clay":
 			instance.material_override = material
 		for surface: int in instance.mesh.get_surface_count():
+			var active := instance.get_active_material(surface) as StandardMaterial3D
+			if active != null:
+				material_records.append({"name":active.resource_name,"albedo_texture":active.albedo_texture != null,
+					"normal_texture":active.normal_texture != null,"roughness_texture":active.roughness_texture != null,
+					"metallic_texture":active.metallic_texture != null,"emission_texture":active.emission_texture != null})
 			if instance.get_active_material(surface) == null:
 				instance.set_surface_override_material(surface, material)
 	var floor_node := MeshInstance3D.new()
@@ -129,7 +135,7 @@ func _run() -> void:
 		await process_frame
 	var report := {"schema_version":1, "runtime_glb_import":"passed", "mesh_instances":mesh_instances,
 		"triangles":triangles, "bounds":{"position":array3(bounds.position),"size":array3(bounds.size)},
-		"captures":captures, "material_mode":material_mode, "preview_kind":"generic inspection, no game-specific scale acceptance", "visual_review":"pending_human"}
+		"captures":captures, "materials":material_records, "material_mode":material_mode, "preview_kind":"generic inspection, no game-specific scale acceptance", "visual_review":"pending_human"}
 	var file := FileAccess.open(output.path_join("preview.json"), FileAccess.WRITE)
 	if file == null:
 		fail("Cannot save preview report")

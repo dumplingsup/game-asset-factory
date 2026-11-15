@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "build_plugin": "blender-static",
+  "blender_version": "5.2.3",
+  "objects": [],
+  "height_m": 1.5,
+  "subdivision_level": 0
+}

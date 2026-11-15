@@ -62,6 +62,25 @@ def assert_inventory(base, hashes):
             raise ValueError(f'Integrity mismatch: {relative}')
 
 
+RESERVED_NAMES = {'asset.json', 'recipe.json', 'revision.json', 'license.json',
+                  'build.json', 'run.json', 'export.json', 'validation.json'}
+
+
+def source_files(source, sidecars=()):
+    paths = [Path(source).resolve(), *(Path(p).resolve() for p in sidecars)]
+    names = set()
+    for path in paths:
+        if not path.is_file():
+            raise ValueError(f'Missing source/sidecar: {path}')
+        name = path.name.casefold().rstrip(' .')
+        if name in RESERVED_NAMES or name != path.name.casefold():
+            raise ValueError(f'Source/sidecar filename conflicts with internal metadata: {path.name}')
+        if name in names:
+            raise ValueError(f'Source and sidecar names collide: {path.name}')
+        names.add(name)
+    return paths
+
+
 def tool(name):
     variable = {'blender': 'BLENDER_BIN', 'godot': 'GODOT_BIN', 'ffmpeg': 'FFMPEG_BIN'}[name]
     value = os.environ.get(variable) or shutil.which(name)
@@ -104,6 +123,24 @@ class Factory:
 
     def path(self, asset_id):
         return self.assets / safe_id(asset_id)
+
+    def quarantine(self, directory, asset_id, action, error):
+        """Move only checked factory-owned transaction paths; never delete evidence."""
+        source = directory.resolve()
+        failures = (self.root / 'artifacts/failed_transactions').resolve()
+        target = failures / (safe_id(asset_id) + '-' + action + '-' + uuid.uuid4().hex)
+        if source == self.assets.resolve() or not source.is_relative_to(self.assets.resolve()) or not target.resolve().is_relative_to(failures):
+            raise ValueError('Transaction quarantine path escapes factory workspace')
+        failures.mkdir(parents=True, exist_ok=True)
+        source.rename(target)
+        write(target / 'transaction.json', {'asset': asset_id, 'action': action, 'status': 'failed',
+              'original_path': str(directory), 'quarantined_at': now(), 'error': str(error)})
+        return target
+
+    def staging(self, asset_id, action):
+        directory = self.assets / '.staging' / (safe_id(asset_id) + '-' + action + '-' + uuid.uuid4().hex)
+        directory.mkdir(parents=True)
+        return directory
 
     @contextmanager
     def lock(self, asset_id):
@@ -166,10 +203,7 @@ class Factory:
         license_data, recipe = read(license_path), read(recipe_path)
         check(license_data, LICENSE)
         check(recipe, RECIPE)
-        if not source.is_file():
-            raise ValueError('Provide an existing local source file')
-        if source.name.casefold() in ('recipe.json', 'revision.json'):
-            raise ValueError('Source filename conflicts with revision metadata')
+        sources = source_files(source, sidecars)
         expected = license_data.get('expected_source_sha256')
         if expected and sha(source) != expected:
             raise ValueError('Source hash differs from license record')
@@ -178,64 +212,87 @@ class Factory:
             raise ValueError('License evidence missing')
         base = self.path(asset_id)
         if base.exists():
-            raise ValueError('Asset already exists; use revise')
-        base.mkdir(parents=True)
-        with self.run(base, 'ingest', inputs={'source_sha256': sha(source), 'license_record_sha256': sha(license_path)}) as (run_dir, record):
-            (base / 'raw').mkdir()
-            sources = [source, *map(lambda p: Path(p).resolve(), sidecars)]
-            if len({p.name.casefold() for p in sources}) != len(sources):
-                raise ValueError('Source and sidecar names collide')
-            for path in sources:
-                if not path.is_file():
-                    raise ValueError(f'Missing sidecar: {path}')
-                shutil.copyfile(path, base / 'raw' / path.name)
-            lic_dir = base / 'licenses'
-            lic_dir.mkdir()
-            copied = []
-            for index, path in enumerate(evidence):
-                name = f'{index:02d}_' + path.name
-                shutil.copyfile(path, lic_dir / name)
-                copied.append(name)
-            license_data['evidence'] = copied
-            write(lic_dir / 'license.json', license_data)
-            directory = base / 'source/r0001'
-            shutil.copytree(base / 'raw', directory)
-            write(directory / 'recipe.json', recipe)
-            revision = {'schema_version': 1, 'id': 'r0001', 'source': source.name, 'created_at': now(), 'note': 'Initial licensed ingest', 'files': inventory(directory)}
-            write(directory / 'revision.json', revision)
-            protected = {**{'raw/' + k: v for k, v in inventory(base / 'raw').items()}, **{'licenses/' + k: v for k, v in inventory(lic_dir).items()}}
-            asset = {'schema_version': 1, 'id': asset_id, 'created_at': now(), 'current_revision': 'r0001', 'protected_files': protected, 'revisions': {'r0001': sha(directory / 'revision.json')}, 'visual_review': 'pending_human'}
-            write(base / 'asset.json', asset)
-            record['outputs'] = {'asset': 'asset.json', 'revision': 'r0001', 'protected_files': protected}
+            runs = [read(p) for p in (base / 'runs').glob('*/run.json')]
+            legacy_failed = not (base / 'asset.json').exists() and runs and all(r.get('action') == 'ingest' and r.get('status') == 'failed' for r in runs)
+            if not legacy_failed:
+                raise ValueError('Asset already exists; use revise (unrecognized existing directories are preserved)')
+            self.quarantine(base, asset_id, 'legacy-ingest', 'Retry of failed 0.1 ingest')
+        stage = self.staging(asset_id, 'ingest')
+        try:
+            with self.run(stage, 'ingest', inputs={'source_sha256': sha(source), 'license_record_sha256': sha(license_path)}) as (run_dir, record):
+                (stage / 'raw').mkdir()
+                for path in sources:
+                    shutil.copyfile(path, stage / 'raw' / path.name)
+                if expected and sha(stage / 'raw' / source.name) != expected:
+                    raise ValueError('Source changed during ingest')
+                lic_dir = stage / 'licenses'
+                lic_dir.mkdir()
+                copied = []
+                for index, path in enumerate(evidence):
+                    name = f'{index:02d}_' + path.name
+                    shutil.copyfile(path, lic_dir / name)
+                    copied.append(name)
+                license_data['evidence'] = copied
+                write(lic_dir / 'license.json', license_data)
+                directory = stage / 'source/r0001'
+                shutil.copytree(stage / 'raw', directory)
+                write(directory / 'recipe.json', recipe)
+                revision = {'schema_version': 1, 'id': 'r0001', 'source': source.name, 'created_at': now(), 'note': 'Initial licensed ingest', 'files': inventory(directory)}
+                write(directory / 'revision.json', revision)
+                protected = {**{'raw/' + k: v for k, v in inventory(stage / 'raw').items()}, **{'licenses/' + k: v for k, v in inventory(lic_dir).items()}}
+                asset = {'schema_version': 1, 'id': asset_id, 'created_at': now(), 'current_revision': 'r0001', 'protected_files': protected, 'revisions': {'r0001': sha(directory / 'revision.json')}, 'visual_review': 'pending_human'}
+                write(stage / 'asset.json', asset)
+                record['outputs'] = {'asset': 'asset.json', 'revision': 'r0001', 'protected_files': protected}
+            stage.rename(base)
+        except Exception as exc:
+            if stage.exists():
+                # Publication can fail after the run context completed.
+                for path in (stage / 'runs').glob('*/run.json'):
+                    data = read(path)
+                    data.update(status='failed', error=str(exc))
+                    write(path, data)
+                self.quarantine(stage, asset_id, 'ingest', exc)
+            raise
         return asset
 
-    def revise(self, asset_id, source, recipe_path, note):
+    def revise(self, asset_id, source, recipe_path, note, sidecars=()):
         base, asset, old_dir, old_revision = self.revision(asset_id)
         source = Path(source).resolve()
-        if not source.is_file():
-            raise ValueError('New editable source missing')
+        explicit = source_files(source, sidecars)
+        inherited = {relative: old_dir / relative for relative in old_revision['files'] if relative not in (old_revision['source'], 'recipe.json')}
+        if any(Path(relative).name.casefold() == source.name.casefold() for relative in inherited):
+            raise ValueError('New source name collides with inherited sidecar; rename the source explicitly')
+        replacements = {p.name.casefold(): p for p in explicit[1:]}
+        inherited = {name: path for name, path in inherited.items() if Path(name).name.casefold() not in replacements}
+        files = source_files(source, [*inherited.values(), *explicit[1:]])
         recipe = read(recipe_path) if recipe_path else read(old_dir / 'recipe.json')
         check(recipe, RECIPE)
         if not read(base / 'licenses/license.json')['rights']['modification']:
             raise ValueError('Modification rights denied')
         new_id = f'r{max(int(r[1:]) for r in asset["revisions"]) + 1:04d}'
-        with self.run(base, 'revise', inputs={'parent': old_revision['id'], 'source_sha256': sha(source), 'note': note}) as (_, record):
-            directory = base / 'source' / new_id
-            directory.mkdir(parents=True)
-            shutil.copyfile(source, directory / source.name)
-            # Retain dependency sidecars from the previous source snapshot.
-            for relative in old_revision['files']:
-                if relative not in (old_revision['source'], 'recipe.json') and relative != source.name:
-                    target = directory / relative
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copyfile(old_dir / relative, target)
-            write(directory / 'recipe.json', recipe)
-            revision = {'schema_version': 1, 'id': new_id, 'source': source.name, 'parent': old_revision['id'], 'created_at': now(), 'note': note, 'files': inventory(directory)}
-            write(directory / 'revision.json', revision)
-            asset['revisions'][new_id] = sha(directory / 'revision.json')
-            asset['current_revision'] = new_id
-            write(base / 'asset.json', asset)
-            record['outputs'] = {'revision': new_id, 'revision_sha256': asset['revisions'][new_id]}
+        directory = base / 'source' / new_id
+        if directory.exists():
+            raise ValueError('Unregistered revision directory already exists; preserve and inspect it')
+        stage = self.staging(asset_id, 'revise')
+        published = committed = False
+        try:
+            with self.run(base, 'revise', inputs={'parent': old_revision['id'], 'source_sha256': sha(source), 'note': note, 'explicit_sidecars': [p.name for p in explicit[1:]]}) as (_, record):
+                for path in files:
+                    shutil.copyfile(path, stage / path.name)
+                write(stage / 'recipe.json', recipe)
+                revision = {'schema_version': 1, 'id': new_id, 'source': source.name, 'parent': old_revision['id'], 'created_at': now(), 'note': note, 'files': inventory(stage)}
+                write(stage / 'revision.json', revision)
+                stage.rename(directory)
+                published = True
+                asset['revisions'][new_id] = sha(directory / 'revision.json')
+                asset['current_revision'] = new_id
+                write(base / 'asset.json', asset)
+                committed = True
+                record['outputs'] = {'revision': new_id, 'revision_sha256': asset['revisions'][new_id]}
+        except Exception as exc:
+            if not committed:
+                self.quarantine(directory if published else stage, asset_id, 'revise', exc)
+            raise
         return {'revision': new_id}
 
     def checkout(self, asset_id, revision):
@@ -256,7 +313,7 @@ class Factory:
         assert_inventory(directory, data['outputs'])
         return directory, data
 
-    def execute(self, action, asset_id, plugin, *, revision=None, build_id=None, movie=False, material_mode='clay'):
+    def execute(self, action, asset_id, plugin, *, revision=None, build_id=None, movie=False, material_mode='clay', usage='commercial'):
         from .plugins import Context, require_local
         require_local(plugin)
         base, asset, rev_dir, rev = self.revision(asset_id, revision)
@@ -273,7 +330,7 @@ class Factory:
         else:
             build_dir, build = None, None
         with self.run(base, action, plugin=plugin.name, inputs=inputs) as (run_dir, record):
-            context = Context(self, base, rev_dir, rev, run_dir, record, build_dir, build, movie, material_mode)
+            context = Context(self, base, rev_dir, rev, run_dir, record, build_dir, build, movie, material_mode, usage)
             result = plugin.run(context)
             record['outputs'] = result
         return result

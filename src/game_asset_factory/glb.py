@@ -108,6 +108,19 @@ def validate_glb(path):
     for image in data.get('images', []):
         if image.get('uri') or not 0 <= image.get('bufferView', -1) < len(views):
             raise ValueError('Expected embedded image with valid buffer view')
+    textures = data.get('textures', [])
+    material_channels = []
+    for material in data.get('materials', []):
+        pbr = material.get('pbrMetallicRoughness', {})
+        slots = {key: pbr[key] for key in ('baseColorTexture', 'metallicRoughnessTexture') if key in pbr}
+        slots.update({key: material[key] for key in ('normalTexture', 'occlusionTexture', 'emissiveTexture') if key in material})
+        for slot in slots.values():
+            index = slot.get('index', -1)
+            if not 0 <= index < len(textures) or not 0 <= textures[index].get('source', -1) < len(data.get('images', [])):
+                raise ValueError('Invalid material texture/image reference')
+        material_channels.append({'name': material.get('name', ''), 'textures': sorted(slots),
+                                  'base_color_factor': pbr.get('baseColorFactor', [1, 1, 1, 1]),
+                                  'metallic_factor': pbr.get('metallicFactor', 1), 'roughness_factor': pbr.get('roughnessFactor', 1)})
     for node in data.get('nodes', []):
         if 'mesh' in node and not 0 <= node['mesh'] < len(meshes):
             raise ValueError('Invalid node mesh reference')
@@ -116,6 +129,7 @@ def validate_glb(path):
     return {'format': 'GLB 2.0 static', 'technical_status': 'passed', 'vertices_exported': vertices,
             'triangles_mesh_definitions': triangles, 'meshes': len(meshes), 'primitives': primitive_count,
             'materials': len(data.get('materials', [])), 'embedded_images': len(data.get('images', [])),
+            'material_channels': material_channels,
             'position_bounds_gltf_local': {'min': lo, 'max': hi}, 'degenerate_index_triangles': degenerate_indices,
             'semantic_sha256': digest, 'geometry_sha256_at_1e_5': geometry.hexdigest(), 'visual_review': 'pending_human',
             'coverage': 'Structural/buffer/accessor/finite/index checks plus Blender reimport; not Khronos certification or visual acceptance'}

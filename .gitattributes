@@ -22,3 +22,4 @@
 # Preserve exact snapshot bytes, including license evidence and hashed JSON.
 assets/** -text
 artifacts/** -text
+vendor/** -text

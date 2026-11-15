@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "title": "Lantern",
+  "author": "Microsoft / sbtron; Frank Galligan (compression)",
+  "source_url": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/8f492390ddc7a2ae221a1369ef560589cf8c70fb/Models/Lantern",
+  "source_version": "8f492390ddc7a2ae221a1369ef560589cf8c70fb",
+  "license": "CC0-1.0",
+  "evidence": [
+    "../vendor/khronos-lantern/8f492390ddc7/README.md",
+    "../vendor/khronos-lantern/8f492390ddc7/CC0-1.0.txt",
+    "../vendor/khronos-lantern/8f492390ddc7/acquisition.json",
+    "../vendor/khronos-lantern/8f492390ddc7/ATTRIBUTION.txt"
+  ],
+  "expected_source_sha256": "a79458c4b02d695187a952f23a63b8bf278e7bc3d316a3c2a314f2d6974181f1",
+  "rights": {
+    "commercial_use": true,
+    "modification": true,
+    "runtime_distribution": true,
+    "source_distribution": true,
+    "third_party_upload": false
+  },
+  "attribution_required": false,
+  "conditions": "Retain attribution, license links and notices, mark modifications. Factory upload policy remains disabled."
+}

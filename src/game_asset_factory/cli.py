@@ -24,6 +24,7 @@ def main():
     revise.add_argument('--source', required=True, type=Path)
     revise.add_argument('--recipe', type=Path)
     revise.add_argument('--note', required=True)
+    revise.add_argument('--sidecar', action='append', default=[], type=Path)
     checkout = commands.add_parser('checkout')
     checkout.add_argument('asset')
     checkout.add_argument('--revision', required=True)
@@ -40,6 +41,8 @@ def main():
         if action == 'preview':
             command.add_argument('--movie', action='store_true')
             command.add_argument('--material-mode', choices=['clay', 'source'], default='clay')
+        if action == 'export':
+            command.add_argument('--usage', choices=['commercial', 'noncommercial'], default='commercial')
     args = parser.parse_args()
     factory = Factory(args.root)
     try:
@@ -56,7 +59,7 @@ def main():
                 if args.command == 'ingest':
                     result = factory.ingest(args.asset, args.source, args.license_record, args.recipe, args.sidecar)
                 elif args.command == 'revise':
-                    result = factory.revise(args.asset, args.source, args.recipe, args.note)
+                    result = factory.revise(args.asset, args.source, args.recipe, args.note, args.sidecar)
                 elif args.command == 'checkout':
                     result = factory.checkout(args.asset, args.revision)
                 elif args.command == 'status':
@@ -66,7 +69,7 @@ def main():
                     plugin = plugins.get(args.plugin)
                     if plugin is None or plugin.action != args.command:
                         raise ValueError('No implemented plugin for this command: ' + args.plugin)
-                    result = factory.execute(args.command, args.asset, plugin, revision=args.revision, build_id=getattr(args, 'build', None), movie=getattr(args, 'movie', False), material_mode=getattr(args, 'material_mode', 'clay'))
+                    result = factory.execute(args.command, args.asset, plugin, revision=args.revision, build_id=getattr(args, 'build', None), movie=getattr(args, 'movie', False), material_mode=getattr(args, 'material_mode', 'clay'), usage=getattr(args, 'usage', 'commercial'))
         print(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False))
         return 0
     except (OSError, ValueError, RuntimeError, KeyError) as exc:

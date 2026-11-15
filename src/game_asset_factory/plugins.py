@@ -22,6 +22,7 @@ class Context:
     build: dict | None
     movie: bool
     material_mode: str = 'clay'
+    usage: str = 'commercial'
 
     def output(self, kind):
         directory = self.asset / kind / self.run_dir.name
@@ -36,6 +37,17 @@ def require_local(plugin):
 
 class LocalPlugin:
     network = upload = paid = False
+
+
+def check_export_rights(rights, usage, required=()):
+    if usage not in ('commercial', 'noncommercial'):
+        raise ValueError('Export usage must be commercial or noncommercial')
+    requirements = set(required) | {'runtime_distribution'}
+    if usage == 'commercial':
+        requirements.add('commercial_use')
+    denied = sorted(right for right in requirements if not rights.get(right, False))
+    if denied:
+        raise ValueError('Export rights denied for ' + usage + ': ' + ', '.join(denied))
 
 
 def blender(ctx, action, output):
@@ -137,9 +149,7 @@ class GlbExport(LocalPlugin):
         if profile.get('id') != 'glb' or profile.get('plugin') != self.name or profile.get('includes_source') is not False:
             raise ValueError('Unsupported GLB profile contract')
         validation = receipt(ctx, profile['requires_validation'])
-        required_rights = set(profile['requires_rights']) | {'runtime_distribution'}
-        if any(not license_data['rights'].get(right, False) for right in required_rights):
-            raise ValueError('Runtime distribution rights denied')
+        check_export_rights(license_data['rights'], ctx.usage, profile['requires_rights'])
         output = ctx.output('exports')
         shutil.copyfile(ctx.build_dir / 'model.glb', output / 'model.glb')
         shutil.copytree(ctx.asset / 'licenses', output / 'notices')
@@ -147,7 +157,7 @@ class GlbExport(LocalPlugin):
               'source_revision': ctx.build['revision'], 'source_revision_sha256': ctx.build['revision_sha256'], 'build_id': ctx.build['id'],
               'build_manifest_sha256': sha(ctx.build_dir / 'build.json'), 'model_sha256': sha(output / 'model.glb'),
               'validation_id': validation, 'profile_sha256': sha(profile_path), 'rights': license_data['rights'], 'license': license_data['license'],
-              'source_files_included': False, 'visual_review': 'pending_human'})
+              'usage': ctx.usage, 'source_files_included': False, 'visual_review': 'pending_human'})
         return {'export_id': ctx.run_dir.name, 'path': str(output), 'files': inventory(output), 'visual_review': 'pending_human'}
 
 

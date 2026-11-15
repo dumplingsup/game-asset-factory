@@ -1,0 +1,5 @@
+Fox
+Authors: PixelMannen (model); tomkranis (rig and animation); AsoboStudio and scurest (glTF conversion)
+Source: https://github.com/KhronosGroup/glTF-Sample-Assets/tree/8f492390ddc7a2ae221a1369ef560589cf8c70fb/Models/Fox
+License: Model CC0-1.0; rigging/animation and glTF conversion CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/)
+Factory derivatives may normalize transforms, modify a local region, re-export, and reuse the original motions. See the source revision recipe and build reports for exact changes. No endorsement is claimed. Original notices and license text retained.
