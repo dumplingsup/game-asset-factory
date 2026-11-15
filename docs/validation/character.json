@@ -1,0 +1,144 @@
+{
+  "document_kind": "public_summary_not_integrity_receipt",
+  "status": "passed",
+  "command_steps": 19,
+  "sample_asset_id": "fox-20261115t034642",
+  "visual_review": "pending_human",
+  "raw_logs": "Retained locally under ignored assets/ and artifacts/; machine paths and full asset databases are not published.",
+  "source_sha256": "d97044e701822bac5a62696459b27d7b375aada5de8574ed4362edbba94771f7",
+  "source_metrics": {
+    "format": "GLB 2.0 character",
+    "technical_status": "passed",
+    "vertices_exported": 1728,
+    "triangles_mesh_definitions": 576,
+    "meshes": 1,
+    "primitives": 1,
+    "materials": 1,
+    "embedded_images": 1,
+    "material_channels": [
+      {
+        "name": "fox_material",
+        "textures": [
+          "baseColorTexture"
+        ],
+        "base_color_factor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "metallic_factor": 0,
+        "roughness_factor": 0.58
+      }
+    ],
+    "position_bounds_gltf_local": {
+      "min": [
+        -12.592718124389648,
+        -0.12174476683139801,
+        -88.09500122070312
+      ],
+      "max": [
+        12.592718124389648,
+        78.90718841552734,
+        66.62486267089844
+      ]
+    },
+    "degenerate_index_triangles": 0,
+    "semantic_sha256": "1b4f17b82b8ba44542a93494f3944bf45b44c65cc2dbddd8973e27ad61b1048e",
+    "geometry_sha256_at_1e_5": "486c65434ee3221c1e6ddc7137e789e0e95ea4064529af6a2f8c255b021b0be5",
+    "visual_review": "pending_human",
+    "coverage": "Structural/buffer/accessor/finite/index checks plus Blender reimport; not Khronos certification or visual acceptance",
+    "skins": [
+      {
+        "joints": 24,
+        "joint_names": [
+          "_rootJoint",
+          "b_Root_00",
+          "b_Hip_01",
+          "b_Spine01_02",
+          "b_Spine02_03",
+          "b_Neck_04",
+          "b_Head_05",
+          "b_RightUpperArm_06",
+          "b_RightForeArm_07",
+          "b_RightHand_08",
+          "b_LeftUpperArm_09",
+          "b_LeftForeArm_010",
+          "b_LeftHand_011",
+          "b_Tail01_012",
+          "b_Tail02_013",
+          "b_Tail03_014",
+          "b_LeftLeg01_015",
+          "b_LeftLeg02_016",
+          "b_LeftFoot01_017",
+          "b_LeftFoot02_018",
+          "b_RightLeg01_019",
+          "b_RightLeg02_020",
+          "b_RightFoot01_021",
+          "b_RightFoot02_022"
+        ]
+      }
+    ],
+    "weighted_vertices": 1728,
+    "animations": [
+      {
+        "name": "Survey",
+        "duration": 3.4166667461395264,
+        "channels": 21,
+        "dynamic_joint_channels": 21
+      },
+      {
+        "name": "Walk",
+        "duration": 0.7083333134651184,
+        "channels": 21,
+        "dynamic_joint_channels": 21
+      },
+      {
+        "name": "Run",
+        "duration": 1.1583333015441895,
+        "channels": 21,
+        "dynamic_joint_channels": 21
+      }
+    ]
+  },
+  "edit_preserved": {
+    "bones_sha256": true,
+    "weights_sha256": true,
+    "uv_sha256": true,
+    "actions_sha256": true,
+    "materials_sha256": true,
+    "images_sha256": true
+  },
+  "edited_glb_byte_equal": true,
+  "original_glb_byte_equal": true,
+  "playback_clips": [
+    {
+      "baked_vertices": 1728,
+      "bone_motion_radians": 2.25317525863647,
+      "clip": "Run",
+      "donor_pose_error_radians": 0.0009765625,
+      "duration": 1.15,
+      "skinned_vertex_motion_m": 0.944675743579865
+    },
+    {
+      "baked_vertices": 1728,
+      "bone_motion_radians": 1.36642861366272,
+      "clip": "Survey",
+      "donor_pose_error_radians": 0.000690533954184502,
+      "duration": 3.4166667,
+      "skinned_vertex_motion_m": 0.661118388175964
+    },
+    {
+      "baked_vertices": 1728,
+      "bone_motion_radians": 1.80605220794678,
+      "clip": "Walk",
+      "donor_pose_error_radians": 0.0009765625,
+      "duration": 0.7,
+      "skinned_vertex_motion_m": 0.56804758310318
+    }
+  ],
+  "motion_library_reloaded": true,
+  "static_rig_rejected": true,
+  "empty_region_rejected": true,
+  "edited_vertices": 15
+}

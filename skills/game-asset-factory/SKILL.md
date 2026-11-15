@@ -5,13 +5,13 @@ description: 为个人游戏与 Mod 获取、登记、加工、修改、验证�
 
 # Game Asset Factory
 
-工厂仓库在 `<factory-root>`，独立于任何游戏。先读该仓库的 `AGENTS.md`、`README.md`；需要扩展时读 `docs/PLUGINS.md`。素材获取、编辑和导出优先复用工厂，游戏工程只接收合适的派生导出件，除非用户明确要求其他位置。
+工厂仓库在 `{{FACTORY_ROOT}}`，独立于任何游戏。scripts/sync_skills.py 安装时填入实际仓库路径；直接复制模板时先替换此标记。先读该仓库的 `AGENTS.md`、`README.md`；需要扩展时读 `docs/PLUGINS.md`。素材获取、编辑和导出优先复用工厂，游戏工程只接收合适的派生导出件，除非用户明确要求其他位置。
 
 从任意目录调用必须同时指定 uv project 和工厂数据根，避免写入当前游戏：
 
 ```powershell
-uv run --project <factory-root> --locked gaf --root <factory-root> plugins
-uv run --project <factory-root> --locked gaf --root <factory-root> doctor
+uv run --project "{{FACTORY_ROOT}}" --locked gaf --root "{{FACTORY_ROOT}}" plugins
+uv run --project "{{FACTORY_ROOT}}" --locked gaf --root "{{FACTORY_ROOT}}" doctor
 ```
 
 已实现：本地原件登记；静态 PBR 多 Mesh 的 Blender／GLB／Godot 链路；角色骨架／蒙皮／材质／动作保留、可编辑 .blend、局部网格修改、真实骨骼动画预览、兼容骨架动作库复用；带 notices 的版本化 GLB 导出与源修订 revise/checkout。用 `gaf --help` 获取实际参数，build 返回的 build_id 传给 validate、preview、export。

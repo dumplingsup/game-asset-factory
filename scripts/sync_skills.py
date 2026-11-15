@@ -25,7 +25,7 @@ def routed(payload):
     block = '''<!-- game-asset-factory-routing:start -->
 ## 优先使用本地资产工厂
 
-先读取同级 `game-asset-factory/SKILL.md`。仓库位于 `<factory-root>`；从任何目录调用均显式指定 `uv --project` 和 `gaf --root`，避免写入游戏项目。静态 3D 的 ingest → build → validate → preview → export 优先走该 CLI，保留许可证、源修订、真实工具日志和导出版本。技术通过不能替代人工视觉评审。
+先读取同级 `game-asset-factory/SKILL.md`。仓库位于 `{{FACTORY_ROOT}}`；从任何目录调用均显式指定 `uv --project` 和 `gaf --root`，避免写入游戏项目。静态 3D 的 ingest → build → validate → preview → export 优先走该 CLI，保留许可证、源修订、真实工具日志和导出版本。技术通过不能替代人工视觉评审。
 
 工厂 0.2 支持既有骨架／蒙皮／材质／动画保留、局部网格修改，以及在兼容 rig 上复用原动作；角色必须使用角色插件，不能交给静态插件丢弃骨骼。当前不支持自动绑定、任意骨架 retarget、morph、2D 生产、付费生成服务或具体游戏的 Mod 导出；按实际能力转交专用工具。禁止把权利未核验的素材上传生成服务。直接 Blender 脚本可作为专用加工补充，成熟后通过插件接入工厂。
 <!-- game-asset-factory-routing:end -->'''
@@ -34,7 +34,7 @@ def routed(payload):
     heading = '# 游戏美术工作流'
     if heading not in text:
         raise ValueError('Expected existing workflow heading missing; refusing broad rewrite')
-    return text.replace(heading, heading + '\n\n' + block, 1).encode('utf-8')
+    return text.replace(heading, heading + '\n\n' + block.replace('{{FACTORY_ROOT}}', ROOT.as_posix()), 1).encode('utf-8')
 
 
 parser = argparse.ArgumentParser()
@@ -62,13 +62,12 @@ else:
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')
     backup = ROOT / 'artifacts/skills_backup' / stamp
     backup.mkdir(parents=True)
-    master = (ROOT / 'skills/game-asset-factory/SKILL.md').read_bytes()
+    master = (ROOT / 'skills/game-asset-factory/SKILL.md').read_bytes().replace(b'{{FACTORY_ROOT}}', ROOT.as_posix().encode('utf-8'))
     planned = []
     for host, directory in HOSTS.items():
         workflow = directory / 'game-art-workflow/SKILL.md'
-        if not workflow.is_file():
-            raise ValueError('Existing workflow missing: ' + str(workflow))
-        planned.extend([(host, directory / 'game-asset-factory/SKILL.md', master), (host, workflow, routed(workflow.read_bytes()))])
+        workflow_payload = workflow.read_bytes() if workflow.is_file() else (ROOT / 'skills/game-art-workflow/SKILL.md').read_bytes()
+        planned.extend([(host, directory / 'game-asset-factory/SKILL.md', master), (host, workflow, routed(workflow_payload))])
     record = {'installed_at': datetime.now(timezone.utc).isoformat(), 'files': []}
     for host, path, payload in planned:
         before = path.read_bytes() if path.is_file() else None

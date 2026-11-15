@@ -7,7 +7,7 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
-parser.add_argument('--commit')
+parser.add_argument('--commit', default='8f492390ddc7a2ae221a1369ef560589cf8c70fb')
 args = parser.parse_args()
 
 
@@ -17,7 +17,7 @@ def fetch(url):
         return response.read()
 
 
-commit = args.commit or json.loads(fetch('https://api.github.com/repos/KhronosGroup/glTF-Sample-Assets/commits/main'))['sha']
+commit = args.commit
 base = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/' + commit
 for name in ('Lantern', 'Fox'):
     directory = ROOT / 'vendor' / ('khronos-' + name.lower()) / commit[:12]

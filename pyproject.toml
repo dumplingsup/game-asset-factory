@@ -6,8 +6,14 @@ build-backend = "hatchling.build"
 name = "game-asset-factory"
 version = "0.2.0"
 description = "Local, traceable, engine-independent game asset production"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.13,<3.14"
 dependencies = ["jsonschema>=4.23,<5"]
+
+[project.urls]
+Repository = "https://github.com/dumplingsup/game-asset-factory"
+Issues = "https://github.com/dumplingsup/game-asset-factory/issues"
 
 [project.scripts]
 gaf = "game_asset_factory.cli:main"

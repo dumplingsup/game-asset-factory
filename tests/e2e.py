@@ -14,6 +14,8 @@ from game_asset_factory.glb import validate_glb
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', required=True, type=Path)
 parser.add_argument('--asset', default='cc0-human')
+parser.add_argument('--license-record', type=Path, default=Path(__file__).resolve().parents[1] / 'examples/cc0-human.license.json')
+parser.add_argument('--recipe', type=Path, default=Path(__file__).resolve().parents[1] / 'examples/cc0-human.recipe.json')
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')
@@ -46,8 +48,8 @@ def run(arguments, expected=0):
 
 try:
     source = args.source.resolve()
-    license_file = root / 'examples/cc0-human.license.json'
-    recipe = root / 'examples/cc0-human.recipe.json'
+    license_file = args.license_record.resolve()
+    recipe = args.recipe.resolve()
     report['source_sha256'] = sha(source)
     run(['ingest', args.asset, '--source', str(source), '--license-record', str(license_file), '--recipe', str(recipe)])
     first = run(['build', args.asset])

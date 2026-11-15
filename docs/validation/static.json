@@ -1,0 +1,16 @@
+{
+  "document_kind": "public_summary_not_integrity_receipt",
+  "status": "passed",
+  "command_steps": 18,
+  "sample_asset_id": "public-static-regression",
+  "visual_review": "pending_human",
+  "raw_logs": "Retained locally under ignored assets/ and artifacts/; machine paths and full asset databases are not published.",
+  "rebuild": {
+    "first": "20261115t034730-build-beda4d1a",
+    "second": "20261115t034739-build-825f62d9",
+    "semantic_equal": true,
+    "glb_byte_equal": true,
+    "semantic_sha256": "4061354dc67066fffbbcf88ea6576284b7ea34ccbeaa2d83ef6e517119ef2aa0"
+  },
+  "restricted_export_rejected": true
+}

@@ -1,0 +1,101 @@
+{
+  "document_kind": "public_summary_not_integrity_receipt",
+  "status": "passed",
+  "command_steps": 12,
+  "sample_asset_id": "lantern-20261115t034616",
+  "visual_review": "pending_human",
+  "raw_logs": "Retained locally under ignored assets/ and artifacts/; machine paths and full asset databases are not published.",
+  "source_metrics": {
+    "format": "GLB 2.0 static",
+    "technical_status": "passed",
+    "vertices_exported": 4145,
+    "triangles_mesh_definitions": 5394,
+    "meshes": 3,
+    "primitives": 3,
+    "materials": 1,
+    "embedded_images": 4,
+    "material_channels": [
+      {
+        "name": "LanternPost_Mat",
+        "textures": [
+          "baseColorTexture",
+          "emissiveTexture",
+          "metallicRoughnessTexture",
+          "normalTexture"
+        ],
+        "base_color_factor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "metallic_factor": 1,
+        "roughness_factor": 1
+      }
+    ],
+    "position_bounds_gltf_local": {
+      "min": [
+        -7.745599269866943,
+        -12.832109451293945,
+        -2.3157098293304443
+      ],
+      "max": [
+        7.745599269866943,
+        12.832109451293945,
+        2.3157098293304443
+      ]
+    },
+    "degenerate_index_triangles": 0,
+    "semantic_sha256": "0a58bab318b0d2e1902c02efb1a0a3f2708ea1ddf0b6a59d2afb7ad438761d97",
+    "geometry_sha256_at_1e_5": "10bd37f66b3bec9c3be5f1db50593c566b15d53f6da7056a220334d5673b37d1",
+    "visual_review": "pending_human",
+    "coverage": "Structural/buffer/accessor/finite/index checks plus Blender reimport; not Khronos certification or visual acceptance"
+  },
+  "output_metrics": {
+    "format": "GLB 2.0 static",
+    "technical_status": "passed",
+    "vertices_exported": 4146,
+    "triangles_mesh_definitions": 5394,
+    "meshes": 3,
+    "primitives": 3,
+    "materials": 1,
+    "embedded_images": 4,
+    "material_channels": [
+      {
+        "name": "LanternPost_Mat",
+        "textures": [
+          "baseColorTexture",
+          "emissiveTexture",
+          "metallicRoughnessTexture",
+          "normalTexture"
+        ],
+        "base_color_factor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "metallic_factor": 1,
+        "roughness_factor": 1
+      }
+    ],
+    "position_bounds_gltf_local": {
+      "min": [
+        -0.45270803570747375,
+        0.0,
+        -0.13534659147262573
+      ],
+      "max": [
+        0.45270806550979614,
+        1.5,
+        0.13534659147262573
+      ]
+    },
+    "degenerate_index_triangles": 0,
+    "semantic_sha256": "4061354dc67066fffbbcf88ea6576284b7ea34ccbeaa2d83ef6e517119ef2aa0",
+    "geometry_sha256_at_1e_5": "fa3bf364cc4d39f7d9adae011415916ea11b2b9fa0bdb4c9374036aba2fd7221",
+    "visual_review": "pending_human",
+    "coverage": "Structural/buffer/accessor/finite/index checks plus Blender reimport; not Khronos certification or visual acceptance"
+  },
+  "commercial_denied_noncommercial_allowed": true
+}
