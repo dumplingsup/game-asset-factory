@@ -4,6 +4,8 @@ A local, engine-independent asset pipeline for indie games and Mods. Python + uv
 
 本地游戏／Mod 美术资产工厂。**0.2** 支持静态 PBR、多 Mesh，以及保留现有骨骼、蒙皮、材质和动画的角色加工、局部修改与兼容骨架动作复用。资产生产独立于游戏工程；Godot 是通用预览目标。
 
+v0.3 investigation: [scope, real candidate inspections and acceptance gates](docs/v03/SCOPE.md). The complete biped wolf/fox sample has not yet passed admission; this does not announce Morph/equipment support or a 0.3 release.
+
 **Status:** technical validation only. Every asset remains `visual_review=pending_human`; an Agent cannot approve visual quality. Automatic rigging, arbitrary retargeting, morph targets, 2D production and game-specific Mod adapters are not implemented.
 
 ## Requirements

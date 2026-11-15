@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "status": "investigation_checkpoint_not_0.3_release",
+  "baseline_version": "0.2.0",
+  "baseline_checks": {
+    "unit_tests": 36,
+    "fox_character_steps": 19,
+    "lantern_pbr_steps": 12,
+    "original_01_human_steps": 18,
+    "status": "passed"
+  },
+  "downloaded_and_blender_inspected": [
+    {
+      "name": "Wolfman",
+      "raw_source_sha256": "b63f699f36d5db203a6029add68982148f4c3868f2ed1c9df0d404b5123a3d40",
+      "raw_source_bytes": 2322788,
+      "source_probe_sha256": "6fc9cefe0d29e26ff51a1fe023c1c821c42adbc2469f368fa1bb8e1998145013",
+      "counts": {
+        "meshes": 1,
+        "materials": 1,
+        "rigs": 1,
+        "bones": 65,
+        "actions": 0,
+        "morph_targets": 16
+      },
+      "readiness_checks": {
+        "multiple_meshes": false,
+        "multiple_materials": false,
+        "has_real_skin": true,
+        "has_existing_bone_actions": false,
+        "has_nonzero_morphs": true
+      },
+      "raw_source_unchanged": true,
+      "source_license_label": "CC0",
+      "source_url": "https://arweave.net/wGhrzz7gMTxVeu8SeinAox3FO57BjQ09xjjcO4bOR9I",
+      "primary_e2e_eligible": false,
+      "gaps": [
+        "single mesh",
+        "single material",
+        "no existing animation clips",
+        "no independently switchable equipment verified"
+      ],
+      "nonzero_morph_targets": 15,
+      "zero_delta_target_names": [
+        "target_15"
+      ]
+    },
+    {
+      "name": "Buffedwolf",
+      "raw_source_sha256": "5705ff7206a2e982d51d84b0e0c24a5a87383aba5f1df272b310092c15a34cc7",
+      "raw_source_bytes": 7681086,
+      "source_probe_sha256": "ec8aa65bfca6e2cb80000861d821b6c0ec59db29ae022df1df3afe890924edf2",
+      "counts": {
+        "meshes": 1,
+        "materials": 1,
+        "rigs": 1,
+        "bones": 60,
+        "actions": 0,
+        "morph_targets": 14
+      },
+      "readiness_checks": {
+        "multiple_meshes": false,
+        "multiple_materials": false,
+        "has_real_skin": true,
+        "has_existing_bone_actions": false,
+        "has_nonzero_morphs": true
+      },
+      "raw_source_unchanged": true,
+      "source_license_label": "CC0",
+      "source_url": "https://arweave.net/dtI-JA5uSmbJVa7w7294T_9AJ_jvfZVQx4QWFzYdvdQ",
+      "primary_e2e_eligible": false,
+      "gaps": [
+        "single mesh",
+        "single material",
+        "no existing animation clips",
+        "no independently switchable equipment verified"
+      ],
+      "nonzero_morph_targets": 14,
+      "zero_delta_target_names": []
+    },
+    {
+      "name": "MeganTheFox",
+      "raw_source_sha256": "7167d50eb9fae3d3e0453ab6ab2e26b777452b5e0dc41108dfa162a3a061efd2",
+      "raw_source_bytes": 5777896,
+      "source_probe_sha256": "2357a49dd5b6c3f622a17cee5acbcec08ea54e9989493826396e243ded62faf4",
+      "counts": {
+        "meshes": 1,
+        "materials": 1,
+        "rigs": 1,
+        "bones": 46,
+        "actions": 0,
+        "morph_targets": 14
+      },
+      "readiness_checks": {
+        "multiple_meshes": false,
+        "multiple_materials": false,
+        "has_real_skin": true,
+        "has_existing_bone_actions": false,
+        "has_nonzero_morphs": true
+      },
+      "raw_source_unchanged": true,
+      "source_license_label": "CC0",
+      "source_url": "https://arweave.net/up4WzT0YJfXv9woGseCIQnBSq3eH8KWASJJbNtuvEWY",
+      "primary_e2e_eligible": false,
+      "gaps": [
+        "single mesh",
+        "single material",
+        "no existing animation clips",
+        "no independently switchable equipment verified"
+      ],
+      "nonzero_morph_targets": 14,
+      "zero_delta_target_names": []
+    }
+  ],
+  "kai": {
+    "model_uid": "aa56e447b578470b8d6b1b9587fd29ac",
+    "official_license": "CC-BY-4.0",
+    "official_animation_count": 8,
+    "source_obtained": false,
+    "anonymous_download_http_status": 401,
+    "browser_navigation": "timed out, including recovery",
+    "multi_mesh": "unknown",
+    "multi_material": "unknown",
+    "equipment": "unknown",
+    "facial_morphs": "unknown"
+  },
+  "production_modules_changed": false,
+  "primary_sample_accepted": false,
+  "v03_end_to_end": "not_started_pending_qualified_sample",
+  "visual_review": "pending_human",
+  "full_original_files_and_raw_logs": "retained locally in ignored artifacts/v03; public summaries are not integrity receipts",
+  "fox_probe_backward_check": {
+    "status": "passed",
+    "counts": {
+      "meshes": 1,
+      "materials": 1,
+      "rigs": 1,
+      "bones": 24,
+      "actions": 3,
+      "morph_targets": 0
+    },
+    "raw_source_unchanged": true
+  },
+  "production_modules_match_local_02_by_sha256": true,
+  "source_probe_code_sha256": "9209b22a8c808c69a90f0a28b55082ee74a3ddad22e24a6c3a521d6a687425b5"
+}
