@@ -69,6 +69,56 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "build_plugin": {
+            "const": "blender-character"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "build_plugin",
+          "blender_version",
+          "height_m",
+          "rotation_z_degrees",
+          "animation_fps"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "build_plugin": {
+            "const": "blender-character"
+          },
+          "blender_version": {
+            "type": "string",
+            "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$"
+          },
+          "height_m": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "rotation_z_degrees": {
+            "type": "number",
+            "minimum": -360,
+            "maximum": 360
+          },
+          "animation_fps": {
+            "type": "integer",
+            "minimum": 24,
+            "maximum": 120
+          }
+        }
+      }
     }
   ]
 }

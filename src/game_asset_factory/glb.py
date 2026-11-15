@@ -6,7 +6,7 @@ from pathlib import Path
 import struct
 
 
-def validate_glb(path):
+def validate_glb(path, *, allow_character=False):
     raw = Path(path).read_bytes()
     if len(raw) < 28:
         raise ValueError('Truncated GLB')
@@ -31,7 +31,7 @@ def validate_glb(path):
         raise ValueError('Not glTF 2.0')
     if data.get('extensionsRequired'):
         raise ValueError('Required extensions unsupported by static base validator')
-    if data.get('skins') or data.get('animations'):
+    if not allow_character and (data.get('skins') or data.get('animations')):
         raise ValueError('Static profile does not support skin/animation')
     buffers = data.get('buffers', [])
     if len(buffers) != 1 or buffers[0].get('uri') or not 0 <= len(binary) - buffers[0]['byteLength'] <= 3:
@@ -125,11 +125,97 @@ def validate_glb(path):
         if 'mesh' in node and not 0 <= node['mesh'] < len(meshes):
             raise ValueError('Invalid node mesh reference')
     semantic = {k: data.get(k) for k in ('meshes', 'nodes', 'materials', 'textures', 'images', 'samplers', 'accessors', 'bufferViews')}
+    if allow_character:
+        semantic.update(skins=data.get('skins'), animations=data.get('animations'))
     digest = hashlib.sha256(json.dumps(semantic, sort_keys=True, separators=(',', ':')).encode() + binary).hexdigest()
-    return {'format': 'GLB 2.0 static', 'technical_status': 'passed', 'vertices_exported': vertices,
+    result = {'format': 'GLB 2.0 character' if allow_character else 'GLB 2.0 static', 'technical_status': 'passed', 'vertices_exported': vertices,
             'triangles_mesh_definitions': triangles, 'meshes': len(meshes), 'primitives': primitive_count,
             'materials': len(data.get('materials', [])), 'embedded_images': len(data.get('images', [])),
             'material_channels': material_channels,
             'position_bounds_gltf_local': {'min': lo, 'max': hi}, 'degenerate_index_triangles': degenerate_indices,
             'semantic_sha256': digest, 'geometry_sha256_at_1e_5': geometry.hexdigest(), 'visual_review': 'pending_human',
             'coverage': 'Structural/buffer/accessor/finite/index checks plus Blender reimport; not Khronos certification or visual acceptance'}
+    if allow_character:
+        result.update(character_metrics(data, accessors, values))
+    return result
+
+
+def character_metrics(data, accessors, values):
+    nodes, skins = data.get('nodes', []), data.get('skins', [])
+    parents = {}
+    for index, node in enumerate(nodes):
+        for child in node.get('children', []):
+            if not 0 <= child < len(nodes) or child in parents:
+                raise ValueError('Invalid node hierarchy')
+            parents[child] = index
+    for index in range(len(nodes)):
+        visited = set()
+        current = index
+        while current in parents:
+            if current in visited:
+                raise ValueError('Cyclic node hierarchy')
+            visited.add(current)
+            current = parents[current]
+    joint_nodes = set()
+    skin_records = []
+    for skin in skins:
+        joints = skin.get('joints', [])
+        if not joints or len(set(joints)) != len(joints) or any(not 0 <= j < len(nodes) for j in joints):
+            raise ValueError('Invalid skin joints')
+        joint_nodes.update(joints)
+        inverse = skin.get('inverseBindMatrices')
+        if inverse is not None and (not 0 <= inverse < len(accessors) or accessors[inverse]['type'] != 'MAT4' or accessors[inverse]['componentType'] != 5126 or accessors[inverse]['count'] != len(joints)):
+            raise ValueError('Invalid inverse bind matrices')
+        skin_records.append({'joints': len(joints), 'joint_names': [nodes[j].get('name', str(j)) for j in joints]})
+    weighted_vertices = 0
+    for node in nodes:
+        if 'skin' not in node:
+            continue
+        if not 0 <= node['skin'] < len(skins) or 'mesh' not in node:
+            raise ValueError('Invalid skinned node')
+        joint_count = len(skins[node['skin']]['joints'])
+        for primitive in data['meshes'][node['mesh']]['primitives']:
+            attrs = primitive['attributes']
+            if not all(key in attrs for key in ('JOINTS_0', 'WEIGHTS_0')):
+                raise ValueError('Skinned mesh missing joint/weight attributes')
+            j, w = attrs['JOINTS_0'], attrs['WEIGHTS_0']
+            if accessors[j]['type'] != 'VEC4' or accessors[j]['componentType'] not in (5121, 5123) or accessors[w]['type'] != 'VEC4':
+                raise ValueError('Invalid joint/weight representation')
+            multiplier = {5121: 255, 5123: 65535}.get(accessors[w]['componentType'], 1)
+            if multiplier != 1 and not accessors[w].get('normalized'):
+                raise ValueError('Integer weights must be normalized')
+            for joints, weights in zip(values[j], values[w], strict=True):
+                weights = [x / multiplier for x in weights]
+                if any(x < 0 or x > 1.001 for x in weights) or abs(sum(weights) - 1) > 0.002:
+                    raise ValueError('Invalid skin weight sum')
+                if any(joint >= joint_count for joint, weight in zip(joints, weights) if weight > 0):
+                    raise ValueError('Skin joint index out of range')
+                weighted_vertices += 1
+    animations = []
+    for animation in data.get('animations', []):
+        samplers, dynamic = animation.get('samplers', []), 0
+        duration = 0.0
+        for channel in animation.get('channels', []):
+            target = channel.get('target', {})
+            sampler_id = channel.get('sampler', -1)
+            if not 0 <= sampler_id < len(samplers) or not 0 <= target.get('node', -1) < len(nodes) or target.get('path') not in ('translation', 'rotation', 'scale'):
+                raise ValueError('Unsupported/invalid animation channel')
+            sampler = samplers[sampler_id]
+            i, o = sampler.get('input', -1), sampler.get('output', -1)
+            if not 0 <= i < len(accessors) or not 0 <= o < len(accessors):
+                raise ValueError('Invalid animation sampler accessor')
+            if accessors[i]['type'] != 'SCALAR' or accessors[i]['componentType'] != 5126:
+                raise ValueError('Animation time must be float SCALAR')
+            times = [row[0] for row in values[i]]
+            if times[0] < 0 or any(b <= a for a, b in zip(times, times[1:])):
+                raise ValueError('Animation time is not strictly increasing')
+            interpolation = sampler.get('interpolation', 'LINEAR')
+            factor = 3 if interpolation == 'CUBICSPLINE' else 1
+            expected_type = 'VEC4' if target['path'] == 'rotation' else 'VEC3'
+            if interpolation not in ('LINEAR', 'STEP', 'CUBICSPLINE') or accessors[o]['count'] != len(times) * factor or accessors[o]['type'] != expected_type:
+                raise ValueError('Invalid animation interpolation/output')
+            duration = max(duration, times[-1])
+            if target['node'] in joint_nodes and any(max(row) != min(row) for row in zip(*values[o])):
+                dynamic += 1
+        animations.append({'name': animation.get('name', ''), 'duration': duration, 'channels': len(animation.get('channels', [])), 'dynamic_joint_channels': dynamic})
+    return {'skins': skin_records, 'weighted_vertices': weighted_vertices, 'animations': animations}

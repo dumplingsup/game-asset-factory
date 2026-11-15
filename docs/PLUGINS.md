@@ -20,3 +20,7 @@ run 收到已校验的资产路径、源修订、不可覆盖运行目录、可�
 基础调度器拒绝 network/upload/paid=true。将来扩展 AI 生成时需要独立的授权对象、允许上传的输入哈希和许可、目标供应商／模型版本／任务 ID／费用上限／失败重试边界；也需要保存原始下载，不能把 prompt/seed 当成永远可重建的源文件。当前没有可调用的 AI 生产后端，也没有已实现的生成命令。
 
 插件必须保留 visual_review=pending_human。自动操作可以报告具体文件／画面观察，但不能给资产签发视觉质量通过状态。
+
+## 0.2 增量
+
+新增 blender-character、glb-character、godot-character，以及 action=edit 的 blender-character-edit。仍使用原 Context／运行记录／源修订，不新增 Agent 框架。GLB exporter 根据 character build 自动选择 glb-character profile，并继续独立检查 commercial/noncommercial 与 runtime_distribution；profile 不能绕过商业用途检查。完整操作见 [CHARACTER_WORKFLOW.md](CHARACTER_WORKFLOW.md)。

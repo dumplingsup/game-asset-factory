@@ -1,0 +1,12 @@
+{
+  "kind": "vertex_offset",
+  "object": "fox",
+  "where": {
+    "vertex_group": "b_Head_05",
+    "min_weight": 0.9,
+    "bounds": {"x": [2, 20], "y": [-55, -30], "z": [68, 90]}
+  },
+  "delta": [0, 0, 4],
+  "max_fraction": 0.1,
+  "description": "Raise only the left ear tip region in source mesh coordinates; preserve topology, UV, weights, rig and animation."
+}

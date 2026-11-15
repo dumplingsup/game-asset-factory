@@ -31,6 +31,17 @@ RECIPE = {
     "allOf": [{"if": {"properties": {"build_plugin": {"const": "blender-static"}}}, "then": BLENDER_RECIPE}],
 }
 
+CHARACTER_RECIPE = {
+    "type": "object", "additionalProperties": False,
+    "required": ["schema_version", "build_plugin", "blender_version", "height_m", "rotation_z_degrees", "animation_fps"],
+    "properties": {"schema_version": {"const": 1}, "build_plugin": {"const": "blender-character"},
+                   "blender_version": {"type": "string", "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$"},
+                   "height_m": {"type": ["number", "null"], "exclusiveMinimum": 0},
+                   "rotation_z_degrees": {"type": "number", "minimum": -360, "maximum": 360},
+                   "animation_fps": {"type": "integer", "minimum": 24, "maximum": 120}},
+}
+RECIPE['allOf'].append({"if": {"properties": {"build_plugin": {"const": "blender-character"}}}, "then": CHARACTER_RECIPE})
+
 
 def check(data, schema):
     errors = sorted(Draft202012Validator(schema).iter_errors(data), key=lambda e: str(e.path))

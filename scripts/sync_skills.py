@@ -17,7 +17,7 @@ def digest(payload):
 
 def routed(payload):
     text = payload.decode('utf-8-sig')
-    description = '为个人独立游戏与各类 Mod 制作或修改美术素材时，优先复用本地 Game Asset Factory 管理原件、许可、静态 3D 加工、预览与导出；2D、像素特效和尚未实现的绑定动画使用对应专用工作流。'
+    description = '为个人独立游戏与各类 Mod 制作或修改美术素材时，优先复用本地 Game Asset Factory 管理许可、静态 PBR 和带骨架动画的角色加工、局部修改、预览与导出；2D、像素特效等使用对应专用工作流。'
     text = re.sub(r'(?m)^description: .+$', 'description: ' + description, text, count=1)
     old = '按当前任务选用本机工具。同级技能目录提供 SKILL.md；下列 PowerShell 路径使用当前用户的主目录。原始规格、绘图脚本及导出文件放在所做游戏的项目中。'
     new = '按当前任务选用本机工具。同级技能目录提供 SKILL.md；下列 PowerShell 路径使用当前用户的主目录。共享生产素材的原件、可编辑文件、许可和版本优先保存在独立工厂；游戏／Mod 工程接收派生导出件。用户指定的路径和既有工程约束优先。'
@@ -27,9 +27,10 @@ def routed(payload):
 
 先读取同级 `game-asset-factory/SKILL.md`。仓库位于 `<factory-root>`；从任何目录调用均显式指定 `uv --project` 和 `gaf --root`，避免写入游戏项目。静态 3D 的 ingest → build → validate → preview → export 优先走该 CLI，保留许可证、源修订、真实工具日志和导出版本。技术通过不能替代人工视觉评审。
 
-工厂当前不支持骨骼／动画、2D 生产、付费生成服务或具体游戏的 Mod 导出；这些任务继续用下面的专用工具，不虚构已支持的能力。禁止把权利未核验的素材上传生成服务。直接 Blender 脚本可作为专用加工补充，成熟后通过插件接入工厂。
+工厂 0.2 支持既有骨架／蒙皮／材质／动画保留、局部网格修改，以及在兼容 rig 上复用原动作；角色必须使用角色插件，不能交给静态插件丢弃骨骼。当前不支持自动绑定、任意骨架 retarget、morph、2D 生产、付费生成服务或具体游戏的 Mod 导出；按实际能力转交专用工具。禁止把权利未核验的素材上传生成服务。直接 Blender 脚本可作为专用加工补充，成熟后通过插件接入工厂。
 <!-- game-asset-factory-routing:end -->'''
     text = re.sub(r'<!-- game-asset-factory-routing:start -->.*?<!-- game-asset-factory-routing:end -->\s*', '', text, flags=re.S)
+    text = text.replace('- 角色、道具、地块和逐帧动画用 pixel-art-studio。', '- 2D 角色、道具、地块和逐帧动画用 pixel-art-studio。')
     heading = '# 游戏美术工作流'
     if heading not in text:
         raise ValueError('Expected existing workflow heading missing; refusing broad rewrite')

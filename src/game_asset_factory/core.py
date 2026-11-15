@@ -204,8 +204,9 @@ class Factory:
         check(license_data, LICENSE)
         check(recipe, RECIPE)
         sources = source_files(source, sidecars)
+        input_hashes = {path.name: sha(path) for path in sources}
         expected = license_data.get('expected_source_sha256')
-        if expected and sha(source) != expected:
+        if expected and input_hashes[source.name] != expected:
             raise ValueError('Source hash differs from license record')
         evidence = [Path(p) if Path(p).is_absolute() else license_path.parent / p for p in license_data['evidence']]
         if any(not p.is_file() for p in evidence):
@@ -219,12 +220,11 @@ class Factory:
             self.quarantine(base, asset_id, 'legacy-ingest', 'Retry of failed 0.1 ingest')
         stage = self.staging(asset_id, 'ingest')
         try:
-            with self.run(stage, 'ingest', inputs={'source_sha256': sha(source), 'license_record_sha256': sha(license_path)}) as (run_dir, record):
+            with self.run(stage, 'ingest', inputs={'source_sha256': input_hashes[source.name], 'file_hashes': input_hashes, 'license_record_sha256': sha(license_path)}) as (run_dir, record):
                 (stage / 'raw').mkdir()
                 for path in sources:
                     shutil.copyfile(path, stage / 'raw' / path.name)
-                if expected and sha(stage / 'raw' / source.name) != expected:
-                    raise ValueError('Source changed during ingest')
+                assert_inventory(stage / 'raw', input_hashes)
                 lic_dir = stage / 'licenses'
                 lic_dir.mkdir()
                 copied = []
@@ -313,7 +313,7 @@ class Factory:
         assert_inventory(directory, data['outputs'])
         return directory, data
 
-    def execute(self, action, asset_id, plugin, *, revision=None, build_id=None, movie=False, material_mode='clay', usage='commercial'):
+    def execute(self, action, asset_id, plugin, *, revision=None, build_id=None, movie=False, material_mode='clay', usage='commercial', operation=None, animation_source_build=None, profile=None):
         from .plugins import Context, require_local
         require_local(plugin)
         base, asset, rev_dir, rev = self.revision(asset_id, revision)
@@ -330,7 +330,9 @@ class Factory:
         else:
             build_dir, build = None, None
         with self.run(base, action, plugin=plugin.name, inputs=inputs) as (run_dir, record):
-            context = Context(self, base, rev_dir, rev, run_dir, record, build_dir, build, movie, material_mode, usage)
+            if operation is not None:
+                record['inputs']['operation'] = operation
+            context = Context(self, base, rev_dir, rev, run_dir, record, build_dir, build, movie, material_mode, usage, operation, animation_source_build, profile)
             result = plugin.run(context)
             record['outputs'] = result
         return result

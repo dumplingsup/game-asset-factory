@@ -96,6 +96,21 @@ def test_revise_copy_failure_does_not_block_same_revision(inputs, monkeypatch):
     assert factory.revise('sample', source, None, 'retry')['revision'] == 'r0002'
 
 
+def test_source_changed_during_ingest_is_not_committed(inputs, monkeypatch):
+    factory, source, lic, recipe = inputs
+    copy = shutil.copyfile
+
+    def race(src, dst, **kwargs):
+        if Path(src) == source:
+            source.write_bytes(b'changed after preflight')
+        return copy(src, dst, **kwargs)
+
+    monkeypatch.setattr(shutil, 'copyfile', race)
+    with pytest.raises(ValueError, match='Integrity'):
+        factory.ingest('race', source, lic, recipe)
+    assert not factory.path('race').exists()
+
+
 @pytest.mark.parametrize('commercial', [False, True])
 @pytest.mark.parametrize('runtime', [False, True])
 @pytest.mark.parametrize('usage', ['commercial', 'noncommercial'])

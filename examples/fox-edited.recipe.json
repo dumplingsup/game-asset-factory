@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "build_plugin": "blender-character",
+  "blender_version": "5.2.3",
+  "height_m": null,
+  "rotation_z_degrees": 0,
+  "animation_fps": 60
+}

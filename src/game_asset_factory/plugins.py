@@ -1,10 +1,10 @@
 """Entry-point plugins; only implemented local capabilities are registered."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from importlib.metadata import entry_points
 from pathlib import Path
 import shutil
 
-from .core import assert_inventory, inventory, process, read, sha, tool, write
+from .core import assert_inventory, inventory, process, read, safe_id, sha, tool, write
 from .glb import validate_glb
 
 RESOURCES = Path(__file__).parent / 'resources'
@@ -23,6 +23,9 @@ class Context:
     movie: bool
     material_mode: str = 'clay'
     usage: str = 'commercial'
+    operation: dict | None = None
+    animation_source_build: str | None = None
+    profile: str | None = None
 
     def output(self, kind):
         directory = self.asset / kind / self.run_dir.name
@@ -144,16 +147,17 @@ class GlbExport(LocalPlugin):
 
     def run(self, ctx):
         license_data = read(ctx.asset / 'licenses/license.json')
-        profile_path = ctx.factory.root / 'profiles/glb.json'
+        profile_id = safe_id(ctx.profile or ('glb-character' if ctx.build.get('kind') == 'character' else 'glb'))
+        profile_path = ctx.factory.root / 'profiles' / (profile_id + '.json')
         profile = read(profile_path)
-        if profile.get('id') != 'glb' or profile.get('plugin') != self.name or profile.get('includes_source') is not False:
+        if profile.get('id') != profile_id or profile.get('plugin') != self.name or profile.get('includes_source') is not False:
             raise ValueError('Unsupported GLB profile contract')
         validation = receipt(ctx, profile['requires_validation'])
         check_export_rights(license_data['rights'], ctx.usage, profile['requires_rights'])
         output = ctx.output('exports')
         shutil.copyfile(ctx.build_dir / 'model.glb', output / 'model.glb')
         shutil.copytree(ctx.asset / 'licenses', output / 'notices')
-        write(output / 'export.json', {'schema_version': 1, 'id': ctx.run_dir.name, 'profile': 'glb', 'asset': ctx.asset.name,
+        write(output / 'export.json', {'schema_version': 1, 'id': ctx.run_dir.name, 'profile': profile_id, 'asset': ctx.asset.name,
               'source_revision': ctx.build['revision'], 'source_revision_sha256': ctx.build['revision_sha256'], 'build_id': ctx.build['id'],
               'build_manifest_sha256': sha(ctx.build_dir / 'build.json'), 'model_sha256': sha(output / 'model.glb'),
               'validation_id': validation, 'profile_sha256': sha(profile_path), 'rights': license_data['rights'], 'license': license_data['license'],
@@ -161,8 +165,121 @@ class GlbExport(LocalPlugin):
         return {'export_id': ctx.run_dir.name, 'path': str(output), 'files': inventory(output), 'visual_review': 'pending_human'}
 
 
+def character_blender(ctx, action, output):
+    if not read(ctx.asset / 'licenses/license.json')['rights']['modification']:
+        raise ValueError('Modification rights denied')
+    model = None
+    if ctx.build_dir is not None:
+        model = ctx.build_dir / ('editable.blend' if action == 'edit' else 'model.glb')
+    request = {'action': action, 'output': str(output), 'source': str(ctx.revision_dir / ctx.revision['source']),
+               'model': str(model) if model else None, 'recipe': read(ctx.revision_dir / 'recipe.json'), 'operation': ctx.operation}
+    path = ctx.run_dir / 'character_request.json'
+    write(path, request)
+    process([tool('blender'), '--background', '--factory-startup', '--disable-autoexec', '--python-exit-code', '23', '--python', str(RESOURCES / 'character_worker.py'), '--', str(path)], ctx.run_dir, 'blender-character-' + action, timeout=600)
+    return read(output / 'blender_report.json')
+
+
+class BlenderCharacter(LocalPlugin):
+    name, action, category = 'blender-character', 'build', 'animation'
+
+    def run(self, ctx):
+        output = ctx.output('builds')
+        report = character_blender(ctx, 'build', output)
+        source = read(output / 'input_snapshot.json')
+        metrics = validate_glb(output / 'model.glb', allow_character=True)
+        names = {clip['name'] for clip in metrics['animations']}
+        if not metrics['skins'] or not metrics['weighted_vertices'] or names != {clip['name'] for clip in source['actions']}:
+            raise ValueError('Export lost skin or animation clips')
+        for clip in metrics['animations']:
+            action = next(a for a in source['actions'] if a['name'] == clip['name'])
+            fps = read(ctx.revision_dir / 'recipe.json')['animation_fps']
+            expected = (action['frame_range'][1] - action['frame_range'][0]) / fps
+            if clip['dynamic_joint_channels'] < 1 or abs(clip['duration'] - expected) > 1 / fps + 0.001:
+                raise ValueError('Exported clip lost bone motion or timing')
+        if {name for skin in metrics['skins'] for name in skin['joint_names']} != set(source['bone_names']):
+            raise ValueError('Export changed joint names')
+        for key in ('bones_sha256', 'weights_sha256', 'uv_sha256', 'actions_sha256', 'materials_sha256', 'images_sha256'):
+            if report[key] != source[key]:
+                raise ValueError('Build changed protected character data: ' + key)
+        write(output / 'format_metrics.json', metrics)
+        data = {'schema_version': 1, 'id': ctx.run_dir.name, 'kind': 'character', 'status': 'succeeded', 'revision': ctx.revision['id'],
+                'revision_sha256': sha(ctx.revision_dir / 'revision.json'), 'recipe_sha256': sha(ctx.revision_dir / 'recipe.json'),
+                'tool_version': report['version'], 'outputs': inventory(output), 'visual_review': 'pending_human'}
+        write(output / 'build.json', data)
+        return {'build_id': ctx.run_dir.name, 'build_manifest_sha256': sha(output / 'build.json'), 'path': str(output),
+                'model_sha256': sha(output / 'model.glb'), 'semantic_sha256': metrics['semantic_sha256'], 'animations': sorted(names)}
+
+
+class GlbCharacterValidate(LocalPlugin):
+    name, action, category = 'glb-character', 'validate', 'animation'
+
+    def run(self, ctx):
+        if ctx.build.get('kind') != 'character':
+            raise ValueError('Character validator requires character build')
+        metrics = validate_glb(ctx.build_dir / 'model.glb', allow_character=True)
+        imported = character_blender(ctx, 'inspect', ctx.run_dir)
+        if imported['skinned_meshes'] < 1 or imported['bones'] != sum(s['joints'] for s in metrics['skins']) or imported['triangles_evaluated'] != metrics['triangles_mesh_definitions']:
+            raise ValueError('Reimport lost geometry/skin/bones')
+        if {a['name'] for a in imported['actions']} != {a['name'] for a in metrics['animations']}:
+            raise ValueError('Reimport lost animation actions')
+        write(ctx.run_dir / 'validation.json', {'technical_status': 'passed', 'build_id': ctx.build['id'], 'model_sha256': sha(ctx.build_dir / 'model.glb'),
+              'format': metrics, 'blender_reimport': imported, 'visual_review': 'pending_human'})
+        return {'validation_id': ctx.run_dir.name, 'report_sha256': sha(ctx.run_dir / 'validation.json'), 'technical_status': 'passed'}
+
+
+class CharacterEdit(LocalPlugin):
+    name, action, category = 'blender-character-edit', 'edit', 'animation'
+
+    def run(self, ctx):
+        receipt(ctx, 'glb-character')
+        if not ctx.operation:
+            raise ValueError('An explicit local edit operation is required')
+        output = ctx.output('edits')
+        character_blender(ctx, 'edit', output)
+        report = read(output / 'edit_report.json')
+        return {'edit_id': ctx.run_dir.name, 'path': str(output), 'editable_source': str(output / 'editable.blend'),
+                'vertices_modified': report['vertices_modified'], 'files': inventory(output), 'visual_review': 'pending_human'}
+
+
+class GodotCharacterPreview(LocalPlugin):
+    name, action, category = 'godot-character', 'preview', 'animation'
+
+    def run(self, ctx):
+        validation = receipt(ctx, 'glb-character')
+        donor_dir, donor_build = (ctx.build_dir, ctx.build)
+        if ctx.animation_source_build:
+            donor_dir, donor_build = ctx.factory.build_record(ctx.asset, ctx.animation_source_build)
+            receipt(replace(ctx, build_dir=donor_dir, build=donor_build), 'glb-character')
+        ctx.run_record['inputs']['animation_donor'] = {'build_id': donor_build['id'], 'model_sha256': sha(donor_dir / 'model.glb')}
+        output = ctx.output('previews')
+        viewer = output / 'viewer'
+        shutil.copytree(RESOURCES / 'godot', viewer)
+        version = process([tool('godot'), '--version'], ctx.run_dir, 'godot-version')
+        if not version.startswith('4.7.2.'):
+            raise ValueError('Character preview requires verified Godot 4.7.2')
+        command = [tool('godot'), '--path', str(viewer), '--script', str(viewer / 'character_preview.gd'), '--disable-vsync']
+        if ctx.movie:
+            command += ['--write-movie', str(output / 'animation.avi'), '--fixed-fps', '30']
+        command += ['--', '--model=' + str(ctx.build_dir / 'model.glb'), '--donor=' + str(donor_dir / 'model.glb'), '--output=' + str(output), '--material-mode=' + ctx.material_mode]
+        process(command, ctx.run_dir, 'godot-character-preview', timeout=240)
+        report = read(output / 'preview.json')
+        if not report['animation_library_reused'] or not report['animation_library_reloaded_from_disk'] or report['bones'] < 1 or report['skinned_meshes'] < 1 or not report['clips']:
+            raise ValueError('Missing actual character animation proof')
+        expected_clips = {a['name'] for a in read(ctx.build_dir / 'format_metrics.json')['animations']}
+        if {c['clip'] for c in report['clips']} != expected_clips:
+            raise ValueError('Godot did not preview every exported clip')
+        for shot in report['captures']:
+            if (output / shot['file']).stat().st_size < 1024:
+                raise ValueError('Empty animation capture')
+        if ctx.movie:
+            process([tool('ffmpeg'), '-hide_banner', '-loglevel', 'warning', '-y', '-i', str(output / 'animation.avi'), '-an', '-c:v', 'libx264', '-crf', '19', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(output / 'animation.mp4')], ctx.run_dir, 'ffmpeg-animation', timeout=180)
+        report.update(validation_id=validation, godot_version=version, model_sha256=sha(ctx.build_dir / 'model.glb'), donor_sha256=sha(donor_dir / 'model.glb'), visual_review='pending_human')
+        write(output / 'preview.json', report)
+        return {'preview_id': ctx.run_dir.name, 'path': str(output), 'files': inventory(output), 'visual_review': 'pending_human'}
+
+
 def registry():
-    plugins = {p.name: p for p in (BlenderStatic(), GlbValidate(), GodotPreview(), GlbExport())}
+    plugins = {p.name: p for p in (BlenderStatic(), GlbValidate(), GodotPreview(), GlbExport(), BlenderCharacter(), GlbCharacterValidate(), CharacterEdit(), GodotCharacterPreview())}
     for entry in entry_points(group='game_asset_factory.plugins'):
         plugin = entry.load()()
         if plugin.name in plugins:

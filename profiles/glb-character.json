@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "id": "glb-character",
+  "plugin": "glb",
+  "kind": "runtime-character",
+  "format": "GLB 2.0",
+  "requires_validation": "glb-character",
+  "requires_rights": ["runtime_distribution"],
+  "includes_source": false,
+  "visual_review_requirement": "pending_human"
+}
